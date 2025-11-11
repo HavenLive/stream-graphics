@@ -104,61 +104,43 @@ setInterval(() => {
 // --- LOWER THIRD -TILAN MÄÄRITYS ---
 
 function determineLowerThirdMode(match) {
-  // Live-tilanne (scorebugin numerot)
-  const liveA = num(match.live_A);
-  const liveB = num(match.live_B);
-
-  // Erävoitot, jos API tarjoaa erilliset kentät – muuten nolla
-  const setsA = num(
-    match.sets_A ??
-      match.set_A ??
-      match.sets_home ??
-      0
-  );
-
-  const setsB = num(
-    match.sets_B ??
-      match.set_B ??
-      match.sets_away ??
-      0
-  );
+  // Tulokset tulostaululla (Torneopalissa nämä käyttäytyvät kuin erävoitot)
+  const setsA = num(match.live_A);
+  const setsB = num(match.live_B);
 
   // Erän sisäiset pisteet
   const periodA = num(match.live_ps_A);
   const periodB = num(match.live_ps_B);
 
-  // Pelattujen erien määrä (tämä näkyi JSON:ssa)
+  // Pelatut erät (lisäturva)
   const periodsPlayed = num(match.periods_played);
 
-  // 1) LOPPUTULOS – peli ohi kun jollain 3 erää TAI kaikki erät pelattu
-  //    Käytetään sekä erävoittoja että periods_played-kenttää turvana.
-  const finalBySets = setsA >= 3 || setsB >= 3;
-  const finalByPeriods = periodsPlayed >= 3 && !match.live_ps_A && !match.live_ps_B;
-
-  if (finalBySets || finalByPeriods) {
+  // 1) LOPPUTULOS – kun jommalla kummalla vähintään 3 erää
+  //    (tai periods_played >= 3 varmistuksena)
+  if (setsA >= 3 || setsB >= 3 || periodsPlayed >= 5) {
     return "FINAL";
   }
 
   // 2) AIKALISÄ – aikalisä käynnissä (banneri aktiivinen)
   if (timeoutBannerActive) return "TIMEOUT";
 
-  // 3) ERÄTAUKO – kun eräpisteet nollautuneet, mutta erävoittoja kertynyt
+  // 3) ERÄTAUKO – eräpisteet 0–0 / tyhjät, mutta erävoittoja jo olemassa
   const periodsAreZero =
-    (!match.live_ps_A && !match.live_ps_B) ||
-    (periodA === 0 && periodB === 0);
+    (!match.live_ps_A && !match.live_ps_B) || (periodA === 0 && periodB === 0);
 
-  if (periodsAreZero && (setsA + setsB + periodsPlayed) >= 1 && (liveA + liveB) >= 1) {
+  if (periodsAreZero && (setsA + setsB) >= 1) {
     return "SET_BREAK";
   }
 
-  // 4) GAME – ei pisteitä eikä erävoittoja
-  if (liveA === 0 && liveB === 0 && setsA === 0 && setsB === 0 && periodsPlayed === 0) {
+  // 4) GAME – pelin alussa, ei erävoittoja
+  if (setsA === 0 && setsB === 0 && periodA === 0 && periodB === 0) {
     return "GAME";
   }
 
   // Muulloin ei lower3rd-grafiikkaa automaattisesti
   return "NONE";
 }
+
 
 
 
@@ -192,11 +174,7 @@ function setGraphics(match) {
   prevTimeoutsA = currentTimeoutsA;
   prevTimeoutsB = currentTimeoutsB;
 
-  // Jos timeoutin aika on ummessa, lopetetaan banneri
-  if (timeoutBannerActive && Date.now() > timeoutBannerExpiry) {
-    timeoutBannerActive = false;
-    timeoutBannerTeam = null;
-  }
+
 
   // --- PISTEMUUTTUJAT YHTENÄISESTI NUMEROINA ---
   const liveA = num(match.live_A);
@@ -327,10 +305,11 @@ function setGraphics(match) {
     if (lower3rdMessage) lower3rdMessage.innerText = "ERÄTAUKO";
     lower3rdScore.innerText = `${setsA} - ${setsB}`;
   } else if (mode === "FINAL") {
-    // LOPPUTULOS – lopullinen erätilanne
-    if (lower3rdMessage) lower3rdMessage.innerText = "LOPPUTULOS";
-    lower3rdScore.innerText = `${setsA} - ${setsB}`;
-  }
+  // LOPPUTULOS – lopullinen erätilanne
+  lower3rdEl.classList.remove("timeout-mode");
+  if (lower3rdMessage) lower3rdMessage.innerText = "LOPPUTULOS";
+  lower3rdScore.innerText = `${setsA} - ${setsB}`;
+}
 }
 
 
