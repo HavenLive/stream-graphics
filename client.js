@@ -73,12 +73,77 @@ let data = {};
 let socket;
 let reconnectAttempts = 5;
 
-// --- GRAFIIKAN PÄIVITYS ---
+function determineLowerThirdMode(match) {
+  const liveA = match.live_A ?? 0;
+  const liveB = match.live_B ?? 0;
 
+  const setsA =
+    match.sets_A ??
+    match.set_A ??
+    match.sets_home ??
+    0;
+
+  const setsB =
+    match.sets_B ??
+    match.set_B ??
+    match.sets_away ??
+    0;
+
+  const periodA = match.live_ps_A ?? 0;
+  const periodB = match.live_ps_B ?? 0;
+
+  // Tämä on vain arvaus – vaihda oikeaan kenttänimeen kun näet API:n datan.
+  const timeoutActive =
+    match.timeout_active ||
+    match.live_timeout ||
+    match.time_out_active ||
+    false;
+
+  // 1) LOPPUTULOS – peli ohi kun jollain 3 erää
+  if (setsA >= 3 || setsB >= 3) return "FINAL";
+
+  // 2) AIKALISÄ – aikalisä käynnissä
+  if (timeoutActive) return "TIMEOUT";
+
+  // 3) ERÄTAUKO – eräpisteet 0–0, mutta erävoittoja vähintään 1
+  if (periodA === 0 && periodB === 0 && (setsA + setsB) >= 1) {
+    return "SET_BREAK";
+  }
+
+  // 4) GAME – ei pisteitä eikä erävoittoja
+  if (liveA === 0 && liveB === 0 && setsA === 0 && setsB === 0) {
+    return "GAME";
+  }
+
+  // Muulloin ei lower3rd-grafiikkaa automaattisesti
+  return "NONE";
+}
+
+
+// --- GRAFIIKAN PÄIVITYS ---
+// Tätä kannattaa käyttää juuri tällaisenaan – muu logiikka pysyy samana
 function setGraphics(match) {
   if (!match) return;
 
-  // Scorebug – joukkueiden nimet ja live-pisteet
+  const liveA = match.live_A ?? 0;
+  const liveB = match.live_B ?? 0;
+
+  const setsA =
+    match.sets_A ??
+    match.set_A ??
+    match.sets_home ??
+    0;
+
+  const setsB =
+    match.sets_B ??
+    match.set_B ??
+    match.sets_away ??
+    0;
+
+  const mode = determineLowerThirdMode(match);
+
+  // --- SCOREBUG – joukkueet ja live-pisteet ---
+
   home.name.innerText = match.team_A_name || "";
   away.name.innerText = match.team_B_name || "";
 
@@ -120,44 +185,59 @@ function setGraphics(match) {
     away.serving.classList.add("hide");
   }
 
-  // LOWER THIRD – sama data käyttöön
-  if (lower3rdHome && lower3rdAway && lower3rdScore) {
-    lower3rdHome.innerText = match.team_A_name || "";
-    lower3rdAway.innerText = match.team_B_name || "";
+  // --- LOWER THIRD – automaattinen moodi ---
 
-    // Yritetään käyttää erävoittoja jos kentät löytyy, muuten live-pisteet
-    let setsA =
-      match.sets_A !== undefined && match.sets_A !== null
-        ? match.sets_A
-        : match.set_A !== undefined && match.set_A !== null
-        ? match.set_A
-        : match.sets_home !== undefined && match.sets_home !== null
-        ? match.sets_home
-        : null;
+  let lower3rdEnabled = true;
 
-    let setsB =
-      match.sets_B !== undefined && match.sets_B !== null
-        ? match.sets_B
-        : match.set_B !== undefined && match.set_B !== null
-        ? match.set_B
-        : match.sets_away !== undefined && match.sets_away !== null
-        ? match.sets_away
-        : null;
+  // --- LOWER THIRD – automaattinen moodi ---
 
-    if (setsA !== null && setsB !== null) {
-      lower3rdScore.innerText = setsA + " - " + setsB;
-    } else {
-      const la =
-        match.live_A !== undefined && match.live_A !== null ? match.live_A : 0;
-      const lb =
-        match.live_B !== undefined && match.live_B !== null ? match.live_B : 0;
-      lower3rdScore.innerText = la + " - " + lb;
+  if (!lower3rdEl || !lower3rdHome || !lower3rdAway || !lower3rdScore) return;
+
+  // Jos kytkin pois päältä → piilotetaan aina
+  if (!lower3rdEnabled) {
+    lower3rdEl.classList.remove("in");
+    return;
+  }
+
+  // Päivitetään aina joukkueiden nimet lower3rdille
+  lower3rdHome.innerText = match.team_A_name || "";
+  lower3rdAway.innerText = match.team_B_name || "";
+
+  // Jos ei mitään moodia → piilotetaan lower3rd kokonaan
+  if (mode === "NONE") {
+    lower3rdEl.classList.remove("in");
+    return;
+  }
+
+  // Muuten varmistetaan että lower3rd on näkyvissä
+  lower3rdEl.classList.add("in");
+
+  // Default: näytetään message, ellei GAME-tilaa
+  if (lower3rdMessage) {
+    lower3rdMessage.classList.remove("hide");
+  }
+
+  if (mode === "GAME") {
+    // GAME – ei pisteitä eikä otsikkaa
+    if (lower3rdMessage) {
+      lower3rdMessage.classList.add("hide");
     }
-
-    // Jos haluat joskus vaihtaa viestin dynaamisesti:
-    // if (lower3rdMessage) lower3rdMessage.innerText = "LIVE";
+    lower3rdScore.innerText = "";
+  } else if (mode === "TIMEOUT") {
+    // AIKALISÄ – erän sisäiset pisteet
+    if (lower3rdMessage) lower3rdMessage.innerText = "AIKALISÄ";
+    lower3rdScore.innerText = `${liveA} - ${liveB}`;
+  } else if (mode === "SET_BREAK") {
+    // ERÄTAUKO – pelin erätilanne
+    if (lower3rdMessage) lower3rdMessage.innerText = "ERÄTAUKO";
+    lower3rdScore.innerText = `${setsA} - ${setsB}`;
+  } else if (mode === "FINAL") {
+    // LOPPUTULOS – lopullinen erätilanne
+    if (lower3rdMessage) lower3rdMessage.innerText = "LOPPUTULOS";
+    lower3rdScore.innerText = `${setsA} - ${setsB}`;
   }
 }
+
 
 // --- WEBSOCKET ---
 
@@ -248,9 +328,16 @@ if (scorebugBtn && scorebugEl) {
 
 if (lower3rdBtn && lower3rdEl) {
   lower3rdBtn.addEventListener("click", () => {
-    lower3rdEl.classList.toggle("in");
+    lower3rdEnabled = !lower3rdEnabled;
+    if (!lower3rdEnabled) {
+      lower3rdEl.classList.remove("in");
+    } else if (data.match) {
+      // Päivitä heti ajatellun moodin mukaan
+      setGraphics(data.match);
+    }
   });
 }
+
 
 // --- KÄYNNISTYS ---
 
