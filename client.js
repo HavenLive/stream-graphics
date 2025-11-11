@@ -129,6 +129,30 @@ function determineLowerThirdMode(match) {
 function setGraphics(match) {
   if (!match) return;
 
+  // --- AIKALISÄN TUNNISTUS live_timeouts_A/B-perusteella ---
+  const currentTimeoutsA = match.live_timeouts_A ?? 0;
+  const currentTimeoutsB = match.live_timeouts_B ?? 0;
+
+  // Jos aikalisien määrä kasvaa, käynnistetään timeout-banneri
+  if (currentTimeoutsA > prevTimeoutsA) {
+    timeoutBannerActive = true;
+    timeoutBannerTeam = "A";
+    timeoutBannerExpiry = Date.now() + TIMEOUT_BANNER_DURATION;
+  } else if (currentTimeoutsB > prevTimeoutsB) {
+    timeoutBannerActive = true;
+    timeoutBannerTeam = "B";
+    timeoutBannerExpiry = Date.now() + TIMEOUT_BANNER_DURATION;
+  }
+
+  prevTimeoutsA = currentTimeoutsA;
+  prevTimeoutsB = currentTimeoutsB;
+
+  // Jos timeoutin aika on ummessa, lopetetaan banneri
+  if (timeoutBannerActive && Date.now() > timeoutBannerExpiry) {
+    timeoutBannerActive = false;
+    timeoutBannerTeam = null;
+  }
+
   const liveA = match.live_A ?? 0;
   const liveB = match.live_B ?? 0;
 
