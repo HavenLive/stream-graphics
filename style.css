@@ -253,3 +253,19 @@ button.on {
   visibility: visible;
   transition: opacity 500ms ease-out, visibility 0s linear;
 }
+
+/* Aikalisätilassa pienempi fontti ja tiiviimpi asettelu */
+.lower3rd.timeout-mode .game-info {
+  font-size: 1.8vw;        /* pienempi fontti pisteisiin */
+  gap: 0.1vw;
+}
+
+.lower3rd.timeout-mode .score {
+  font-weight: 700;
+  transform: scale(0.9);
+}
+
+.lower3rd.timeout-mode .message {
+  font-size: 1.2vw;
+}
+
