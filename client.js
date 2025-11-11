@@ -116,4 +116,24 @@ async function init() {
   connectWebsocket();
 }
 
+// UI-kontrollit: scorebug ja lower third
+const scorebugEl = document.getElementById("scorebug");
+const lower3rdEl = document.getElementById("lower3rd");
+const scorebugBtn = document.getElementById("scorebug-btn");
+const lower3rdBtn = document.getElementById("lower3rd-btn");
+
+if (scorebugBtn && scorebugEl) {
+  scorebugBtn.addEventListener("click", () => {
+    scorebugEl.classList.toggle("hidden");
+  });
+}
+
+if (lower3rdBtn && lower3rdEl) {
+  // Näytä/piilota lower third animaation kanssa
+  lower3rdBtn.addEventListener("click", () => {
+    lower3rdEl.classList.toggle("in");
+  });
+}
+
+
 addEventListener("load", init);
