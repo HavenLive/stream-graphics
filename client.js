@@ -266,6 +266,8 @@ function setGraphics(match) {
     }
     lower3rdScore.innerText = "";
   } else if (mode === "TIMEOUT") {
+     // Lisää luokka pienentämään fonttia
+  lower3rdEl.classList.add("timeout-mode");
     // AIKALISÄ – erän sisäiset pisteet + aikalisän ottanut joukkue
     if (lower3rdMessage) {
       const teamName =
@@ -283,6 +285,8 @@ function setGraphics(match) {
     // Näytetään erän sisäiset pisteet, ei koko pelin erätilannetta
     lower3rdScore.innerText = `${periodA} - ${periodB}`;
   } else if (mode === "SET_BREAK") {
+     // Poistetaan varmuudeksi timeout-luokka
+  lower3rdEl.classList.remove("timeout-mode");
     // ERÄTAUKO – pelin erätilanne
     if (lower3rdMessage) lower3rdMessage.innerText = "ERÄTAUKO";
     lower3rdScore.innerText = `${setsA} - ${setsB}`;
