@@ -48,48 +48,52 @@ span {
   letter-spacing: 0.03em;
 }
 
-/* Yhteinen tyyli “pill”-laatikoille */
-.teams,
-.game-score,
-.period-score {
+/* Yhteinen tyyli scorebugin punaisille laatikoille */
+.scorebug-box {
   position: relative;
   background: var(--bg-gradient);
   border: 1px solid var(--border-color);
   box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
   border-radius: 0.5vw;
   text-transform: uppercase;
-
-  /* TÄRKEÄ: tekstit allekkain */
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
-/* Joukkueiden nimet – leveä laatikko, vain oikea reuna vinossa */
+/* Yksi yhtenäinen viisto oikea reuna kaikille scorebugin laatikoille */
+.scorebug-box::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -0.6vw;              /* kuinka paljon viisto “työntyy” ulos */
+  width: 0.6vw;
+  height: 100%;
+  background: var(--bg-gradient);
+  border-top-right-radius: 0.5vw;
+  border-bottom-right-radius: 0.5vw;
+  border: 1px solid var(--border-color);
+  border-left: none;
+  box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
+}
+
+/* Joukkueiden nimet */
 .teams {
-  padding: 0.55vw 2vw 0.55vw 1vw;
-  align-items: flex-start;
+  padding: 0.55vw 2.2vw 0.55vw 1vw; /* tilaa viistolle oikealle */
   row-gap: 0.1vw;
-
-  /* vasen suora, oikea viisto (sama kallistus kuin muissa) */
-  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
 }
 
-/* Piste- ja erälaatikot – molemmat reunat hieman vinossa, sama kulma kaikissa */
+/* Piste- ja erälaatikot */
 .game-score,
 .period-score {
-  justify-content: center;
-  align-items: center;
-  row-gap: 0.1vw;
   width: 2.4em;
-  padding: 0.5vw 0.6vw;
+  padding: 0.5vw 1vw 0.5vw 0.8vw; /* vähän tilaa oikealle viistolle */
   margin-left: var(--score-margin);
-
-  /* vasen ja oikea reunaviisto samalla kulmalla */
-  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+  text-align: center;
+  row-gap: 0.1vw;
   font-weight: 700;
 }
 
-/* Pääpisteet isommalla, eräpisteet hieman kevyemmin */
 .game-score {
   font-size: 1.15em;
 }
@@ -98,7 +102,7 @@ span {
   opacity: 0.9;
 }
 
-/* Syöttöikonin laatikko – ei omaa taustalaatikkoa, vain ikonit */
+/* Syöttöikonin laatikko – ei omaa taustaa, vain ikonit */
 .serve-indicator {
   padding: 0.55vw 0 0 0.6vw;
   display: flex;
@@ -132,7 +136,7 @@ button {
   letter-spacing: 0.06em;
 }
 
-/* LOWER THIRD (alapalkki) */
+/* LOWER THIRD (alapalkki) – pidetään selkeänä ilman viistoja */
 
 .lower3rd {
   position: absolute;
@@ -164,9 +168,6 @@ button {
   font-size: 1.5vw;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-
-  /* sama kallistus logiikka kuin scorebugissa */
-  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
 }
 
 /* Alempi rivi (joukkue – pisteet – joukkue) */
@@ -177,7 +178,6 @@ button {
   align-items: stretch;
 }
 
-/* Yhteinen tyyli alapalkin laatikoille */
 .game-info > div {
   position: relative;
   background: var(--bg-gradient);
@@ -186,16 +186,24 @@ button {
   padding: 0.5vw 1vw;
   display: flex;
   align-items: center;
+  border-radius: 0.6vw;
 }
 
-/* Vinot reunat alapalkissa: sama kallistus kaikkialla */
+/* Leveydet ja tekstin sijainti */
+
+.home-team,
+.away-team {
+  width: 28vw;
+}
 
 .home-team {
-  width: 28vw;
   justify-content: flex-end;
   text-align: right;
-  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%); /* vasen suora, oikea viisto */
-  border-radius: 0.6vw 0 0 0.6vw;
+}
+
+.away-team {
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .score {
@@ -204,16 +212,6 @@ button {
   justify-content: center;
   text-align: center;
   font-weight: 700;
-  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); /* molemmat viistot */
-  border-radius: 0.4vw;
-}
-
-.away-team {
-  width: 28vw;
-  justify-content: flex-start;
-  text-align: left;
-  clip-path: polygon(8% 0, 100% 0, 100% 100%, 0 100%); /* vasen viisto, oikea suora */
-  border-radius: 0 0.6vw 0.6vw 0;
 }
 
 /* Sisääntuloanimaatio lower thirdille, jos haluat käyttää .in-luokkaa */
