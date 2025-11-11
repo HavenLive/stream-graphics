@@ -48,46 +48,33 @@ span {
   letter-spacing: 0.03em;
 }
 
-/* Yhteinen tyyli scorebugin punaisille laatikoille */
-.scorebug-box {
+/* Yhteinen tyyli punaisille laatikoille */
+.teams,
+.game-score,
+.period-score {
   position: relative;
   background: var(--bg-gradient);
   border: 1px solid var(--border-color);
   box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
-  border-radius: 0.5vw;
+  border-radius: 0.6vw;
   text-transform: uppercase;
   display: flex;
-  flex-direction: column;
+  flex-direction: column;    /* tekstit allekkain */
   justify-content: center;
-}
-
-/* Yksi yhtenäinen viisto oikea reuna kaikille scorebugin laatikoille */
-.scorebug-box::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: -0.6vw;              /* kuinka paljon viisto “työntyy” ulos */
-  width: 0.6vw;
-  height: 100%;
-  background: var(--bg-gradient);
-  border-top-right-radius: 0.5vw;
-  border-bottom-right-radius: 0.5vw;
-  border: 1px solid var(--border-color);
-  border-left: none;
-  box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
 }
 
 /* Joukkueiden nimet */
 .teams {
-  padding: 0.55vw 2.2vw 0.55vw 1vw; /* tilaa viistolle oikealle */
+  padding: 0.55vw 1.8vw 0.55vw 1vw;
   row-gap: 0.1vw;
+  align-items: flex-start;
 }
 
 /* Piste- ja erälaatikot */
 .game-score,
 .period-score {
   width: 2.4em;
-  padding: 0.5vw 1vw 0.5vw 0.8vw; /* vähän tilaa oikealle viistolle */
+  padding: 0.5vw 0.8vw;
   margin-left: var(--score-margin);
   text-align: center;
   row-gap: 0.1vw;
@@ -102,7 +89,8 @@ span {
   opacity: 0.9;
 }
 
-/* Syöttöikonin laatikko – ei omaa taustaa, vain ikonit */
+/* Syöttöikonit */
+
 .serve-indicator {
   padding: 0.55vw 0 0 0.6vw;
   display: flex;
@@ -136,7 +124,7 @@ button {
   letter-spacing: 0.06em;
 }
 
-/* LOWER THIRD (alapalkki) – pidetään selkeänä ilman viistoja */
+/* LOWER THIRD (alapalkki) */
 
 .lower3rd {
   position: absolute;
@@ -176,6 +164,7 @@ button {
   display: flex;
   font-size: 2.4vw;
   align-items: stretch;
+  gap: 0.2vw;
 }
 
 .game-info > div {
@@ -208,7 +197,7 @@ button {
 
 .score {
   width: 7vw;
-  margin: 0 0.2vw;
+  margin: 0;
   justify-content: center;
   text-align: center;
   font-weight: 700;
