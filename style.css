@@ -48,26 +48,15 @@ span {
   letter-spacing: 0.03em;
 }
 
-/* Yhteinen tyyli kaikille punaisille laatikoille (scorebug + lower third) */
+/* Yhteinen tyyli punaisille laatikoille scorebugissa */
 .teams,
 .game-score,
-.period-score,
-.message,
-.game-info > div {
+.period-score {
   position: relative;
   background: var(--bg-gradient);
   border: 1px solid var(--border-color);
   box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
   border-radius: 0.6vw;
-
-  /* molemmat pystyreunat viistossa – SAMA kulma kaikkialla */
-  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
-}
-
-/* Yhteinen layout scorebugin laatikoille */
-.teams,
-.game-score,
-.period-score {
   text-transform: uppercase;
   display: flex;
   flex-direction: column; /* tekstit allekkain */
@@ -105,7 +94,7 @@ span {
 .serve-indicator {
   padding: 0.3vw 0 0 0.6vw;
   display: flex;
-  flex-direction: column; /* pystyrivi: koti / vieras */
+  flex-direction: column;      /* koti / vieras pystyrivissä */
   justify-content: center;
   row-gap: 0.35vw;
 }
@@ -163,6 +152,11 @@ button {
 }
 
 .message {
+  position: relative;
+  background: var(--bg-gradient);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
+  border-radius: 0.6vw;
   margin: 0 0 0.18vw 0;
   padding: 0.5vw 1.4vw;
   width: 16vw;
@@ -170,10 +164,6 @@ button {
   font-size: 1.5vw;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Alempi rivi (joukkue – pisteet – joukkue) */
@@ -186,9 +176,14 @@ button {
 }
 
 .game-info > div {
+  position: relative;
+  background: var(--bg-gradient);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
   padding: 0.5vw 1vw;
   display: flex;
   align-items: center;
+  border-radius: 0.6vw;
 }
 
 /* Leveydet ja tekstin sijainti */
