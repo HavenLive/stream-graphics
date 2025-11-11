@@ -130,14 +130,17 @@ function determineLowerThirdMode(match) {
 
 
 
+
+
+
 // --- GRAFIIKAN PÄIVITYS ---
 
 function setGraphics(match) {
   if (!match) return;
 
   // --- AIKALISÄN TUNNISTUS live_timeouts_A/B-perusteella ---
-  const currentTimeoutsA = match.live_timeouts_A ?? 0;
-  const currentTimeoutsB = match.live_timeouts_B ?? 0;
+  const currentTimeoutsA = num(match.live_timeouts_A);
+  const currentTimeoutsB = num(match.live_timeouts_B);
 
   // Jos aikalisien määrä kasvaa, käynnistetään timeout-banneri
   if (currentTimeoutsA > prevTimeoutsA) {
@@ -159,20 +162,26 @@ function setGraphics(match) {
     timeoutBannerTeam = null;
   }
 
-  const liveA = match.live_A ?? 0;
-  const liveB = match.live_B ?? 0;
+  // --- PISTEMUUTTUJAT YHTENÄISESTI NUMEROINA ---
+  const liveA = num(match.live_A);
+  const liveB = num(match.live_B);
 
   const setsA =
-    match.sets_A ??
-    match.set_A ??
-    match.sets_home ??
-    0;
+    num(
+      match.sets_A ??
+        match.set_A ??
+        match.sets_home
+    );
 
   const setsB =
-    match.sets_B ??
-    match.set_B ??
-    match.sets_away ??
-    0;
+    num(
+      match.sets_B ??
+        match.set_B ??
+        match.sets_away
+    );
+
+  const periodA = num(match.live_ps_A);
+  const periodB = num(match.live_ps_B);
 
   const mode = determineLowerThirdMode(match);
 
@@ -181,10 +190,8 @@ function setGraphics(match) {
   home.name.innerText = match.team_A_name || "";
   away.name.innerText = match.team_B_name || "";
 
-  home.score.innerText =
-    match.live_A !== undefined && match.live_A !== null ? match.live_A : "";
-  away.score.innerText =
-    match.live_B !== undefined && match.live_B !== null ? match.live_B : "";
+  home.score.innerText = liveA;
+  away.score.innerText = liveB;
 
   // Eräpisteet / period score
   if (!match.live_ps_A && !match.live_ps_B && !match.live_serve_team) {
@@ -194,14 +201,8 @@ function setGraphics(match) {
     away.periodScore.innerText = 0;
     periodScore.classList.remove("hide");
   } else {
-    home.periodScore.innerText =
-      match.live_ps_A !== undefined && match.live_ps_A !== null
-        ? match.live_ps_A
-        : 0;
-    away.periodScore.innerText =
-      match.live_ps_B !== undefined && match.live_ps_B !== null
-        ? match.live_ps_B
-        : 0;
+    home.periodScore.innerText = periodA;
+    away.periodScore.innerText = periodB;
     periodScore.classList.remove("hide");
   }
 
@@ -269,9 +270,7 @@ function setGraphics(match) {
     }
 
     // Näytetään erän sisäiset pisteet, ei koko pelin erätilannetta
-  lower3rdScore.innerText = `${periodA} - ${periodB}`;
-
-    lower3rdScore.innerText = `${liveA} - ${liveB}`;
+    lower3rdScore.innerText = `${periodA} - ${periodB}`;
   } else if (mode === "SET_BREAK") {
     // ERÄTAUKO – pelin erätilanne
     if (lower3rdMessage) lower3rdMessage.innerText = "ERÄTAUKO";
@@ -282,6 +281,11 @@ function setGraphics(match) {
     lower3rdScore.innerText = `${setsA} - ${setsB}`;
   }
 }
+
+
+
+
+
 
 
 
