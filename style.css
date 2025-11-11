@@ -58,24 +58,34 @@ span {
   box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
   border-radius: 0.5vw;
   text-transform: uppercase;
+
+  /* TÄRKEÄ: tekstit allekkain */
   display: flex;
-  align-items: center;
+  flex-direction: column;
 }
 
 /* Joukkueiden nimet – leveä laatikko, vain oikea reuna vinossa */
 .teams {
   padding: 0.55vw 2vw 0.55vw 1vw;
-  clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%);
+  align-items: flex-start;
+  row-gap: 0.1vw;
+
+  /* vasen suora, oikea viisto (sama kallistus kuin muissa) */
+  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
 }
 
-/* Piste- ja erälaatikot – molemmat reunat hieman vinossa */
+/* Piste- ja erälaatikot – molemmat reunat hieman vinossa, sama kulma kaikissa */
 .game-score,
 .period-score {
   justify-content: center;
-  width: 2.4em; /* hieman leveämpi kuin ennen */
+  align-items: center;
+  row-gap: 0.1vw;
+  width: 2.4em;
   padding: 0.5vw 0.6vw;
   margin-left: var(--score-margin);
-  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+
+  /* vasen ja oikea reunaviisto samalla kulmalla */
+  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
   font-weight: 700;
 }
 
@@ -154,7 +164,9 @@ button {
   font-size: 1.5vw;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%);
+
+  /* sama kallistus logiikka kuin scorebugissa */
+  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
 }
 
 /* Alempi rivi (joukkue – pisteet – joukkue) */
@@ -176,13 +188,13 @@ button {
   align-items: center;
 }
 
-/* Vinot reunat alapalkissa: vasen, keskimmäinen, oikea */
+/* Vinot reunat alapalkissa: sama kallistus kaikkialla */
 
 .home-team {
   width: 28vw;
   justify-content: flex-end;
   text-align: right;
-  clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%);
+  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%); /* vasen suora, oikea viisto */
   border-radius: 0.6vw 0 0 0.6vw;
 }
 
@@ -192,7 +204,7 @@ button {
   justify-content: center;
   text-align: center;
   font-weight: 700;
-  clip-path: polygon(5% 0, 95% 0, 95% 100%, 5% 100%);
+  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); /* molemmat viistot */
   border-radius: 0.4vw;
 }
 
@@ -200,7 +212,7 @@ button {
   width: 28vw;
   justify-content: flex-start;
   text-align: left;
-  clip-path: polygon(5% 0, 100% 0, 100% 100%, 0 100%);
+  clip-path: polygon(8% 0, 100% 0, 100% 100%, 0 100%); /* vasen viisto, oikea suora */
   border-radius: 0 0.6vw 0.6vw 0;
 }
 
