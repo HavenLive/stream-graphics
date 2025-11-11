@@ -73,6 +73,13 @@ let data = {};
 let socket;
 let reconnectAttempts = 5;
 let lower3rdEnabled = true; // ← TÄMÄ KUULUU TÄNNE (globaaliksi)
+let prevTimeoutsA = 0;
+let prevTimeoutsB = 0;
+let timeoutBannerActive = false;
+let timeoutBannerTeam = null;
+let timeoutBannerExpiry = 0;
+const TIMEOUT_BANNER_DURATION = 30000; // ms, esim. 30 sekuntia
+
 
 // --- LOWER THIRD -TILAN MÄÄRITYS ---
 
@@ -95,18 +102,11 @@ function determineLowerThirdMode(match) {
   const periodA = match.live_ps_A ?? 0;
   const periodB = match.live_ps_B ?? 0;
 
-  // Tämä on vain arvaus – vaihda oikeaan kenttänimeen kun näet API:n datan.
-  const timeoutActive =
-    match.timeout_active ||
-    match.live_timeout ||
-    match.time_out_active ||
-    false;
-
   // 1) LOPPUTULOS – peli ohi kun jollain 3 erää
   if (setsA >= 3 || setsB >= 3) return "FINAL";
 
-  // 2) AIKALISÄ – aikalisä käynnissä
-  if (timeoutActive) return "TIMEOUT";
+  // 2) AIKALISÄ – jos timeoutBannerActive on päällä
+  if (timeoutBannerActive) return "TIMEOUT";
 
   // 3) ERÄTAUKO – eräpisteet 0–0, mutta erävoittoja vähintään 1
   if (periodA === 0 && periodB === 0 && (setsA + setsB) >= 1) {
@@ -121,6 +121,7 @@ function determineLowerThirdMode(match) {
   // Muulloin ei lower3rd-grafiikkaa automaattisesti
   return "NONE";
 }
+
 
 
 // --- GRAFIIKAN PÄIVITYS ---
