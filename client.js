@@ -1,4 +1,3 @@
-// Lisää oma API-avain tähän:
 const API_KEY = "anzsj3jqsm";
 
 const TORNEO_API_BASE =
@@ -32,7 +31,7 @@ const away = {
   serving: document.getElementById("away-serving"),
 };
 
-// Lower third -elementit
+/* LOWER THIRD -elementit */
 const lower3rdEl = document.getElementById("lower3rd");
 const lower3rdMessage = lower3rdEl
   ? lower3rdEl.querySelector(".message")
@@ -47,17 +46,18 @@ const lower3rdScore = lower3rdEl
   ? lower3rdEl.querySelector(".score")
   : null;
 
-
 let data = {};
 let socket;
 let reconnectAttempts = 5;
 
 function setGraphics(match) {
+  if (!match) return;
+
   // Scorebug – joukkueiden nimet ja live-pisteet
-  home.name.innerText = match.team_A_name;
-  away.name.innerText = match.team_B_name;
-  home.score.innerText = match.live_A;
-  away.score.innerText = match.live_B;
+  home.name.innerText = match.team_A_name || "";
+  away.name.innerText = match.team_B_name || "";
+  home.score.innerText = match.live_A != null ? match.live_A : "";
+  away.score.innerText = match.live_B != null ? match.live_B : "";
 
   // Eräpisteet / period score
   if (!match.live_ps_A && !match.live_ps_B && !match.live_serve_team) {
@@ -67,8 +67,8 @@ function setGraphics(match) {
     away.periodScore.innerText = 0;
     periodScore.classList.remove("hide");
   } else {
-    home.periodScore.innerText = match.live_ps_A;
-    away.periodScore.innerText = match.live_ps_B;
+    home.periodScore.innerText = match.live_ps_A != null ? match.live_ps_A : 0;
+    away.periodScore.innerText = match.live_ps_B != null ? match.live_ps_B : 0;
     periodScore.classList.remove("hide");
   }
 
@@ -88,32 +88,42 @@ function setGraphics(match) {
 
   // LOWER THIRD – sama data käyttöön
   if (lower3rdHome && lower3rdAway && lower3rdScore) {
-    lower3rdHome.innerText = match.team_A_name;
-    lower3rdAway.innerText = match.team_B_name;
+    lower3rdHome.innerText = match.team_A_name || "";
+    lower3rdAway.innerText = match.team_B_name || "";
 
     // Yritetään käyttää erävoittoja jos kentät löytyy, muuten live-pisteet
-    const setsA =
-      match.sets_A ??
-      match.set_A ??
-      match.sets_home ??
-      null;
-    const setsB =
-      match.sets_B ??
-      match.set_B ??
-      match.sets_away ??
-      null;
+    var setsA =
+      match.sets_A != null
+        ? match.sets_A
+        : match.set_A != null
+        ? match.set_A
+        : match.sets_home != null
+        ? match.sets_home
+        : null;
+
+    var setsB =
+      match.sets_B != null
+        ? match.sets_B
+        : match.set_B != null
+        ? match.set_B
+        : match.sets_away != null
+        ? match.sets_away
+        : null;
 
     if (setsA != null && setsB != null) {
-      lower3rdScore.innerText = `${setsA} - ${setsB}`;
+      lower3rdScore.innerText = setsA + " - " + setsB;
     } else {
-      lower3rdScore.innerText = `${match.live_A} - ${match.live_B}`;
+      var la = match.live_A != null ? match.live_A : 0;
+      var lb = match.live_B != null ? match.live_B : 0;
+      lower3rdScore.innerText = la + " - " + lb;
     }
 
-    // Halutessasi voit muuttaa myös messagen dynaamiseksi, esim:
+    // Jos haluat joskus vaihtaa viestiä dynaamisesti:
     // if (lower3rdMessage) lower3rdMessage.innerText = "LIVE";
   }
 }
 
+/* WEBSOCKET + INIT – varmista että annetaan setGraphicsille oikea olio */
 
 function connectWebsocket() {
   if (socket) socket.close();
@@ -126,8 +136,14 @@ function connectWebsocket() {
   };
 
   socket.onmessage = (e) => {
-    data.match = JSON.parse(e.data);
-    setGraphics(data.match);
+    try {
+      const msg = JSON.parse(e.data);
+      // Jos viesti on muotoa { match: {...} } käytetään sitä, muuten oletetaan että se ON match
+      data.match = msg.match ? msg.match : msg;
+      setGraphics(data.match);
+    } catch (err) {
+      console.error("WS: invalid JSON", err);
+    }
   };
 
   socket.onclose = () => {
@@ -161,13 +177,20 @@ async function fetchMatchData(id) {
 
 async function init() {
   data = await fetchMatchData(matchId);
-  setGraphics(data.match);
+
+  if (data) {
+    // Sama logiikka kuin websocketissa: joko { match: {...} } tai pelkkä match
+    const initialMatch = data.match ? data.match : data;
+    setGraphics(initialMatch);
+    data.match = initialMatch;
+  }
+
   connectWebsocket();
 }
 
-// UI-kontrollit: scorebug ja lower third
+/* NAPIT – jos haluat piilottaa/tuoda näkyviin */
+
 const scorebugEl = document.getElementById("scorebug");
-const lower3rdEl = document.getElementById("lower3rd");
 const scorebugBtn = document.getElementById("scorebug-btn");
 const lower3rdBtn = document.getElementById("lower3rd-btn");
 
@@ -178,11 +201,13 @@ if (scorebugBtn && scorebugEl) {
 }
 
 if (lower3rdBtn && lower3rdEl) {
-  // Näytä/piilota lower third animaation kanssa
   lower3rdBtn.addEventListener("click", () => {
     lower3rdEl.classList.toggle("in");
   });
 }
+
+addEventListener("load", init);
+
 
 
 addEventListener("load", init);
