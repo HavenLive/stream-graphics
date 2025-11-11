@@ -248,8 +248,20 @@ function setGraphics(match) {
     }
     lower3rdScore.innerText = "";
   } else if (mode === "TIMEOUT") {
-    // AIKALISÄ – erän sisäiset pisteet
-    if (lower3rdMessage) lower3rdMessage.innerText = "AIKALISÄ";
+    // AIKALISÄ – erän sisäiset pisteet + aikalisän ottanut joukkue
+    if (lower3rdMessage) {
+      const teamName =
+        timeoutBannerTeam === "A"
+          ? match.team_A_name || "Kotijoukkue"
+          : timeoutBannerTeam === "B"
+          ? match.team_B_name || "Vierasjoukkue"
+          : "";
+
+      lower3rdMessage.innerText = teamName
+        ? `AIKALISÄ – ${teamName}`
+        : "AIKALISÄ";
+    }
+
     lower3rdScore.innerText = `${liveA} - ${liveB}`;
   } else if (mode === "SET_BREAK") {
     // ERÄTAUKO – pelin erätilanne
@@ -261,6 +273,7 @@ function setGraphics(match) {
     lower3rdScore.innerText = `${setsA} - ${setsB}`;
   }
 }
+
 
 
 // --- WEBSOCKET ---
