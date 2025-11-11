@@ -32,39 +32,88 @@ const away = {
   serving: document.getElementById("away-serving"),
 };
 
+// Lower third -elementit
+const lower3rdEl = document.getElementById("lower3rd");
+const lower3rdMessage = lower3rdEl
+  ? lower3rdEl.querySelector(".message")
+  : null;
+const lower3rdHome = lower3rdEl
+  ? lower3rdEl.querySelector(".home-team")
+  : null;
+const lower3rdAway = lower3rdEl
+  ? lower3rdEl.querySelector(".away-team")
+  : null;
+const lower3rdScore = lower3rdEl
+  ? lower3rdEl.querySelector(".score")
+  : null;
+
+
 let data = {};
 let socket;
 let reconnectAttempts = 5;
 
-function setGraphics(data) {
-  home.name.innerText = data.team_A_name;
-  away.name.innerText = data.team_B_name;
-  home.score.innerText = data.live_A;
-  away.score.innerText = data.live_B;
+function setGraphics(match) {
+  // Scorebug – joukkueiden nimet ja live-pisteet
+  home.name.innerText = match.team_A_name;
+  away.name.innerText = match.team_B_name;
+  home.score.innerText = match.live_A;
+  away.score.innerText = match.live_B;
 
-  if (!data.live_ps_A && !data.live_ps_B && !data.live_serve_team) {
+  // Eräpisteet / period score
+  if (!match.live_ps_A && !match.live_ps_B && !match.live_serve_team) {
     periodScore.classList.add("hide");
-  } else if (!data.live_ps_A && !data.live_ps_B && data.live_serve_team) {
+  } else if (!match.live_ps_A && !match.live_ps_B && match.live_serve_team) {
     home.periodScore.innerText = 0;
     away.periodScore.innerText = 0;
     periodScore.classList.remove("hide");
   } else {
-    home.periodScore.innerText = data.live_ps_A;
-    away.periodScore.innerText = data.live_ps_B;
+    home.periodScore.innerText = match.live_ps_A;
+    away.periodScore.innerText = match.live_ps_B;
     periodScore.classList.remove("hide");
   }
 
-  if (data.live_serve_team.toUpperCase() === "A") {
+  // Syöttöindikaattori
+  const serveTeam = (match.live_serve_team || "").toUpperCase();
+
+  if (serveTeam === "A") {
     home.serving.classList.remove("hide");
     away.serving.classList.add("hide");
-  } else if (data.live_serve_team.toUpperCase() === "B") {
+  } else if (serveTeam === "B") {
     home.serving.classList.add("hide");
     away.serving.classList.remove("hide");
   } else {
     home.serving.classList.add("hide");
     away.serving.classList.add("hide");
   }
+
+  // LOWER THIRD – sama data käyttöön
+  if (lower3rdHome && lower3rdAway && lower3rdScore) {
+    lower3rdHome.innerText = match.team_A_name;
+    lower3rdAway.innerText = match.team_B_name;
+
+    // Yritetään käyttää erävoittoja jos kentät löytyy, muuten live-pisteet
+    const setsA =
+      match.sets_A ??
+      match.set_A ??
+      match.sets_home ??
+      null;
+    const setsB =
+      match.sets_B ??
+      match.set_B ??
+      match.sets_away ??
+      null;
+
+    if (setsA != null && setsB != null) {
+      lower3rdScore.innerText = `${setsA} - ${setsB}`;
+    } else {
+      lower3rdScore.innerText = `${match.live_A} - ${match.live_B}`;
+    }
+
+    // Halutessasi voit muuttaa myös messagen dynaamiseksi, esim:
+    // if (lower3rdMessage) lower3rdMessage.innerText = "LIVE";
+  }
 }
+
 
 function connectWebsocket() {
   if (socket) socket.close();
