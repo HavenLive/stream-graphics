@@ -322,23 +322,33 @@ const scorebugEl = document.getElementById("scorebug");
 const scorebugBtn = document.getElementById("scorebug-btn");
 const lower3rdBtn = document.getElementById("lower3rd-btn");
 
+// Oletus: molemmat päällä alussa
+if (scorebugBtn) scorebugBtn.classList.add("on");
+if (lower3rdBtn) lower3rdBtn.classList.add("on");
+
 if (scorebugBtn && scorebugEl) {
   scorebugBtn.addEventListener("click", () => {
     scorebugEl.classList.toggle("hidden");
+    const active = !scorebugEl.classList.contains("hidden");
+    scorebugBtn.classList.toggle("on", active);
+    scorebugBtn.classList.toggle("off", !active);
   });
 }
 
 if (lower3rdBtn && lower3rdEl) {
   lower3rdBtn.addEventListener("click", () => {
     lower3rdEnabled = !lower3rdEnabled;
+    lower3rdBtn.classList.toggle("on", lower3rdEnabled);
+    lower3rdBtn.classList.toggle("off", !lower3rdEnabled);
+
     if (!lower3rdEnabled) {
       lower3rdEl.classList.remove("in");
     } else if (data.match) {
-      // Päivitä heti ajatellun moodin mukaan
       setGraphics(data.match);
     }
   });
 }
+
 
 
 // --- KÄYNNISTYS ---
