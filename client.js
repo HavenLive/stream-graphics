@@ -104,54 +104,62 @@ setInterval(() => {
 // --- LOWER THIRD -TILAN MÄÄRITYS ---
 
 function determineLowerThirdMode(match) {
-  // Pelin kokonaistilanne (Torneopalissa nämä vaikuttavat olevan erävoitot)
-  const gameSetsA = num(match.live_A);
-  const gameSetsB = num(match.live_B);
+  // Live-tilanne (scorebugin numerot)
+  const liveA = num(match.live_A);
+  const liveB = num(match.live_B);
 
-  // Mahdolliset erilliset set-kentät, fallback gameSetsA/B:hen
+  // Erävoitot, jos API tarjoaa erilliset kentät – muuten nolla
   const setsA = num(
     match.sets_A ??
       match.set_A ??
       match.sets_home ??
-      gameSetsA
+      0
   );
 
   const setsB = num(
     match.sets_B ??
       match.set_B ??
       match.sets_away ??
-      gameSetsB
+      0
   );
 
   // Erän sisäiset pisteet
   const periodA = num(match.live_ps_A);
   const periodB = num(match.live_ps_B);
 
-  // 1) LOPPUTULOS – peli ohi kun jollain 3 erää
-  if (setsA >= 3 || setsB >= 3) return "FINAL";
+  // Pelattujen erien määrä (tämä näkyi JSON:ssa)
+  const periodsPlayed = num(match.periods_played);
+
+  // 1) LOPPUTULOS – peli ohi kun jollain 3 erää TAI kaikki erät pelattu
+  //    Käytetään sekä erävoittoja että periods_played-kenttää turvana.
+  const finalBySets = setsA >= 3 || setsB >= 3;
+  const finalByPeriods = periodsPlayed >= 3 && !match.live_ps_A && !match.live_ps_B;
+
+  if (finalBySets || finalByPeriods) {
+    return "FINAL";
+  }
 
   // 2) AIKALISÄ – aikalisä käynnissä (banneri aktiivinen)
   if (timeoutBannerActive) return "TIMEOUT";
 
   // 3) ERÄTAUKO – kun eräpisteet nollautuneet, mutta erävoittoja kertynyt
-  //    - live_ps_A/B tyhjiä TAI 0
-  //    - yhteensä erävoittoja vähintään 1
   const periodsAreZero =
     (!match.live_ps_A && !match.live_ps_B) ||
     (periodA === 0 && periodB === 0);
 
-  if (periodsAreZero && (setsA + setsB) >= 1 && (gameSetsA + gameSetsB) >= 1) {
+  if (periodsAreZero && (setsA + setsB + periodsPlayed) >= 1 && (liveA + liveB) >= 1) {
     return "SET_BREAK";
   }
 
   // 4) GAME – ei pisteitä eikä erävoittoja
-  if (gameSetsA === 0 && gameSetsB === 0 && setsA === 0 && setsB === 0) {
+  if (liveA === 0 && liveB === 0 && setsA === 0 && setsB === 0 && periodsPlayed === 0) {
     return "GAME";
   }
 
   // Muulloin ei lower3rd-grafiikkaa automaattisesti
   return "NONE";
 }
+
 
 
 
