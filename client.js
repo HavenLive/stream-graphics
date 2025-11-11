@@ -1,5 +1,11 @@
+// Lisää oma API-avain tähän:
+const API_KEY = "TÄHÄN_SE_AVAIN";
+
 const TORNEO_API_BASE =
-  "https://lentopallo.api.torneopal.com/taso/rest/getMatch?match_id=";
+  "https://lentopallo.api.torneopal.com/taso/rest/getMatch?api_key=" +
+  API_KEY +
+  "&match_id=";
+
 const TORNEO_WS_URL = "wss://nchan.torneopal.com/lentopallo/";
 
 const FALLBACK_MATCH_ID = 685565;
