@@ -1,8 +1,4 @@
-
 const API_KEY = "anzsj3jqsm"; 
-
-// REST-rajapinnan perus-URL
-// Jos avain ei mene URL:iin, muuta tätä riviä omaan muotoosi:
 const TORNEO_API_BASE =
   "https://lentopallo.api.torneopal.com/taso/rest/getMatch?" +
   (API_KEY ? "api_key=" + API_KEY + "&" : "") +
@@ -32,6 +28,10 @@ const socketUrl = debug ? DEBUG_WS_URL : TORNEO_WS_URL + matchId;
 if (urlParams.has("bg")) {
   document.body.style.background = "slategrey";
 }
+
+
+
+
 
 // --- DOM-ELEMENTIT SCOREBUGIA VARTEN ---
 
@@ -72,6 +72,9 @@ const lower3rdScore = lower3rdEl
 let data = {};
 let socket;
 let reconnectAttempts = 5;
+let lower3rdEnabled = true; // ← TÄMÄ KUULUU TÄNNE (globaaliksi)
+
+// --- LOWER THIRD -TILAN MÄÄRITYS ---
 
 function determineLowerThirdMode(match) {
   const liveA = match.live_A ?? 0;
@@ -121,7 +124,7 @@ function determineLowerThirdMode(match) {
 
 
 // --- GRAFIIKAN PÄIVITYS ---
-// Tätä kannattaa käyttää juuri tällaisenaan – muu logiikka pysyy samana
+
 function setGraphics(match) {
   if (!match) return;
 
@@ -184,10 +187,6 @@ function setGraphics(match) {
     home.serving.classList.add("hide");
     away.serving.classList.add("hide");
   }
-
-  // --- LOWER THIRD – automaattinen moodi ---
-
-  let lower3rdEnabled = true;
 
   // --- LOWER THIRD – automaattinen moodi ---
 
@@ -280,6 +279,7 @@ function connectWebsocket() {
   };
 }
 
+
 // --- REST-HAKU ---
 
 async function fetchMatchData(id) {
@@ -299,6 +299,7 @@ async function fetchMatchData(id) {
   }
 }
 
+
 // --- INIT ---
 
 async function init() {
@@ -313,6 +314,7 @@ async function init() {
 
   connectWebsocket();
 }
+
 
 // --- NAPIT: SCOREBUG JA LOWER THIRD ---
 
