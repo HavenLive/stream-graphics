@@ -92,10 +92,19 @@ span {
 /* Syöttöikonit */
 
 .serve-indicator {
-  padding: 0.55vw 0 0 0.6vw;
+  padding: 0.3vw 0 0 0.6vw;
+  display: flex;
+  flex-direction: column;      /* ← tärkein: pystysuunta */
+  justify-content: center;
+  row-gap: 0.35vw;             /* pieni väli pallojen väliin */
+}
+
+.serve-indicator span {
   display: flex;
   align-items: center;
+  justify-content: center;
 }
+
 
 .serve-image {
   width: calc(var(--scorebug-font-size) * 1.15);
