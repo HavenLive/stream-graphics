@@ -166,24 +166,35 @@ function setGraphics(match) {
   const liveA = num(match.live_A);
   const liveB = num(match.live_B);
 
-  const setsA =
-    num(
-      match.sets_A ??
-        match.set_A ??
-        match.sets_home
-    );
+  const setsA = num(
+    match.sets_A ??
+      match.set_A ??
+      match.sets_home
+  );
 
-  const setsB =
-    num(
-      match.sets_B ??
-        match.set_B ??
-        match.sets_away
-    );
+  const setsB = num(
+    match.sets_B ??
+      match.set_B ??
+      match.sets_away
+  );
 
-  const periodA = num(match.live_ps_A);
-  const periodB = num(match.live_ps_B);
+  // Jos live_ps_A / B on tyhjä, käytetään fallbackina liveA / liveB
+  const periodA =
+    match.live_ps_A !== undefined &&
+    match.live_ps_A !== null &&
+    match.live_ps_A !== ""
+      ? num(match.live_ps_A)
+      : liveA;
+
+  const periodB =
+    match.live_ps_B !== undefined &&
+    match.live_ps_B !== null &&
+    match.live_ps_B !== ""
+      ? num(match.live_ps_B)
+      : liveB;
 
   const mode = determineLowerThirdMode(match);
+
 
   // --- SCOREBUG – joukkueet ja live-pisteet ---
 
