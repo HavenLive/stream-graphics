@@ -29,6 +29,11 @@ if (urlParams.has("bg")) {
   document.body.style.background = "slategrey";
 }
 
+function num(value) {
+  const n = Number(value);
+  return isNaN(n) ? 0 : n;
+}
+
 
 
 
@@ -84,28 +89,28 @@ const TIMEOUT_BANNER_DURATION = 30000; // ms, esim. 30 sekuntia
 // --- LOWER THIRD -TILAN MÄÄRITYS ---
 
 function determineLowerThirdMode(match) {
-  const liveA = match.live_A ?? 0;
-  const liveB = match.live_B ?? 0;
+  const liveA = num(match.live_A);
+  const liveB = num(match.live_B);
 
-  const setsA =
+  const setsA = num(
     match.sets_A ??
-    match.set_A ??
-    match.sets_home ??
-    0;
+      match.set_A ??
+      match.sets_home
+  );
 
-  const setsB =
+  const setsB = num(
     match.sets_B ??
-    match.set_B ??
-    match.sets_away ??
-    0;
+      match.set_B ??
+      match.sets_away
+  );
 
-  const periodA = match.live_ps_A ?? 0;
-  const periodB = match.live_ps_B ?? 0;
+  const periodA = num(match.live_ps_A);
+  const periodB = num(match.live_ps_B);
 
   // 1) LOPPUTULOS – peli ohi kun jollain 3 erää
   if (setsA >= 3 || setsB >= 3) return "FINAL";
 
-  // 2) AIKALISÄ – jos timeoutBannerActive on päällä
+  // 2) AIKALISÄ – aikalisä käynnissä (banneri aktiivinen)
   if (timeoutBannerActive) return "TIMEOUT";
 
   // 3) ERÄTAUKO – eräpisteet 0–0, mutta erävoittoja vähintään 1
@@ -121,6 +126,7 @@ function determineLowerThirdMode(match) {
   // Muulloin ei lower3rd-grafiikkaa automaattisesti
   return "NONE";
 }
+
 
 
 
