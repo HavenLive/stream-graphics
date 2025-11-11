@@ -85,6 +85,21 @@ let timeoutBannerTeam = null;
 let timeoutBannerExpiry = 0;
 const TIMEOUT_BANNER_DURATION = 30000; // ms, esim. 30 sekuntia
 
+// Pieni ajastin, joka tarkistaa aikalisäbannerin vanhenemisen
+setInterval(() => {
+  if (!timeoutBannerActive) return;
+
+  if (Date.now() > timeoutBannerExpiry) {
+    timeoutBannerActive = false;
+    timeoutBannerTeam = null;
+
+    // Päivitetään grafiikka nykyisen datan perusteella ilman timeout-tilaa
+    if (data.match) {
+      setGraphics(data.match);
+    }
+  }
+}, 500); // tarkistetaan 2 kertaa sekunnissa
+
 
 // --- LOWER THIRD -TILAN MÄÄRITYS ---
 
