@@ -268,6 +268,9 @@ function setGraphics(match) {
         : "AIKALISÄ";
     }
 
+    // Näytetään erän sisäiset pisteet, ei koko pelin erätilannetta
+  lower3rdScore.innerText = `${periodA} - ${periodB}`;
+
     lower3rdScore.innerText = `${liveA} - ${liveB}`;
   } else if (mode === "SET_BREAK") {
     // ERÄTAUKO – pelin erätilanne
