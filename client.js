@@ -113,8 +113,15 @@ function determineLowerThirdMode(match) {
   // 2) AIKALISÄ – aikalisä käynnissä (banneri aktiivinen)
   if (timeoutBannerActive) return "TIMEOUT";
 
-  // 3) ERÄTAUKO – eräpisteet 0–0, mutta erävoittoja vähintään 1
-  if (periodA === 0 && periodB === 0 && (setsA + setsB) >= 1) {
+  // 3) ERÄTAUKO – kun eräpisteet ovat nollautuneet, mutta erävoittoja kertynyt
+  //   - periodA ja periodB ovat 0 TAI tyhjiä
+  //   - mutta liveA/liveB eivät molemmat 0 (peli käynnissä)
+  //   - ja yhteensä erävoittoja vähintään 1
+  const periodsAreZero =
+    (!match.live_ps_A && !match.live_ps_B) ||
+    (periodA === 0 && periodB === 0);
+
+  if (periodsAreZero && (setsA + setsB) >= 1 && (liveA > 0 || liveB > 0)) {
     return "SET_BREAK";
   }
 
@@ -126,6 +133,7 @@ function determineLowerThirdMode(match) {
   // Muulloin ei lower3rd-grafiikkaa automaattisesti
   return "NONE";
 }
+
 
 
 
