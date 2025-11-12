@@ -42,6 +42,9 @@ function num(value) {
 
 const periodScore = document.getElementById("period-score");
 
+// Näytä scorebug oletuksena pehmeällä animoinnilla
+if (scorebugEl) scorebugEl.classList.add("show");
+
 const home = {
   name: document.getElementById("home-team"),
   score: document.getElementById("home-score"),
@@ -427,12 +430,14 @@ if (scorebugBtn) scorebugBtn.classList.add("on");
 if (lower3rdBtn) lower3rdBtn.classList.add("on");
 
 if (scorebugBtn && scorebugEl) {
-  scorebugBtn.addEventListener("click", () => {
-    scorebugEl.classList.toggle("hidden");
-    const active = !scorebugEl.classList.contains("hidden");
-    scorebugBtn.classList.toggle("on", active);
-    scorebugBtn.classList.toggle("off", !active);
-  });
+ scorebugBtn.addEventListener("click", () => {
+  const willShow = !scorebugEl.classList.contains("show");
+  scorebugEl.classList.toggle("show", willShow);
+
+  scorebugBtn.classList.toggle("on", willShow);
+  scorebugBtn.classList.toggle("off", !willShow);
+});
+
 }
 
 if (lower3rdBtn && lower3rdEl) {
