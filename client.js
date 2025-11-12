@@ -207,6 +207,19 @@ function setGraphics(match) {
       : liveB;
 
   const mode = determineLowerThirdMode(match);
+  // Jos ollaan LOPPUTULOS-tilassa, lukitaan ensimmäinen ei-nolla tulos talteen
+  if (mode === "FINAL") {
+    if (lastFinalSetsA === null && lastFinalSetsB === null) {
+      if (setsA !== 0 || setsB !== 0) {
+        lastFinalSetsA = setsA;
+        lastFinalSetsB = setsB;
+      }
+    }
+  } else {
+    // Kun poistutaan FINAL-tilasta (esim. uusi peli), nollataan lukitus
+    lastFinalSetsA = null;
+    lastFinalSetsB = null;
+  }
 
 
   // --- SCOREBUG – joukkueet ja live-pisteet ---
