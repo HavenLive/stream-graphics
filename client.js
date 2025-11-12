@@ -42,9 +42,6 @@ function num(value) {
 
 const periodScore = document.getElementById("period-score");
 
-// Näytä scorebug oletuksena pehmeällä animoinnilla
-if (scorebugEl) scorebugEl.classList.add("show");
-
 const home = {
   name: document.getElementById("home-team"),
   score: document.getElementById("home-score"),
@@ -406,6 +403,9 @@ async function fetchMatchData(id) {
 // --- INIT ---
 
 async function init() {
+  // Näytä scorebug oletuksena pehmeällä animoinnilla
+if (scorebugEl) scorebugEl.classList.add("show");
+  
   data = await fetchMatchData(matchId);
 
   if (data) {
