@@ -316,12 +316,19 @@ function setGraphics(match) {
     // ERÄTAUKO – pelin erätilanne
     if (lower3rdMessage) lower3rdMessage.innerText = "ERÄTAUKO";
     lower3rdScore.innerText = `${setsA} - ${setsB}`;
+
+    
   } else if (mode === "FINAL") {
-  // LOPPUTULOS – lopullinen erätilanne
   lower3rdEl.classList.remove("timeout-mode");
+
+  // Käytetään lukittua tulosta, jos sellainen on
+  const showSetsA = lastFinalSetsA !== null ? lastFinalSetsA : setsA;
+  const showSetsB = lastFinalSetsB !== null ? lastFinalSetsB : setsB;
+
   if (lower3rdMessage) lower3rdMessage.innerText = "LOPPUTULOS";
-  lower3rdScore.innerText = `${setsA} - ${setsB}`;
+  lower3rdScore.innerText = `${showSetsA} - ${showSetsB}`;
 }
+
 }
 
 
