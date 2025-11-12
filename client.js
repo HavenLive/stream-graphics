@@ -84,6 +84,9 @@ let timeoutBannerActive = false;
 let timeoutBannerTeam = null;
 let timeoutBannerExpiry = 0;
 const TIMEOUT_BANNER_DURATION = 30000; // ms, esim. 30 sekuntia
+let lastFinalSetsA = null;
+let lastFinalSetsB = null;
+
 
 // Pieni ajastin, joka tarkistaa aikalisäbannerin vanhenemisen
 setInterval(() => {
