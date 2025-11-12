@@ -269,3 +269,43 @@ button.on {
   font-size: 1.2vw;
 }
 
+/* Animaatiot scorebugille ja lower thirdille */
+.scorebug,
+.lower3rd {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 250ms ease,
+    transform 250ms ease;
+  will-change: opacity, transform;
+}
+
+/* Näkyvä tila (fade in + nouseva liike) */
+.scorebug.show,
+.lower3rd.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Vähän nopeampi lower3rd, voi tuntua ketterämmältä */
+.lower3rd {
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+/* Kun aikalisä pienentää fonttia, pidetään sama liike/fade */
+.lower3rd.timeout-mode {
+  /* ei tarvitse muuttaa transitioneita */
+}
+
+/* Turvallisuus: jos käyttäjä on asettanut vähennetty animaatio -tilan */
+@media (prefers-reduced-motion: reduce) {
+  .scorebug,
+  .lower3rd {
+    transition: none;
+    transform: none;
+  }
+}
+
+
