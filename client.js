@@ -183,17 +183,10 @@ function setGraphics(match) {
   const liveA = num(match.live_A);
   const liveB = num(match.live_B);
 
-  const setsA = num(
-    match.sets_A ??
-      match.set_A ??
-      match.sets_home
-  );
+  // Erävoitot: käytetään suoraan scorebugin numeroita
+  const setsA = liveA;
+  const setsB = liveB;
 
-  const setsB = num(
-    match.sets_B ??
-      match.set_B ??
-      match.sets_away
-  );
 
   // Jos live_ps_A / B on tyhjä, käytetään fallbackina liveA / liveB
   const periodA =
