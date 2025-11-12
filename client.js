@@ -1,46 +1,38 @@
-const API_KEY = "anzsj3jqsm"; 
+// ====== CONFIG ======
+const API_KEY = "anzsj3jqsm";
 const TORNEO_API_BASE =
   "https://lentopallo.api.torneopal.com/taso/rest/getMatch?" +
   (API_KEY ? "api_key=" + API_KEY + "&" : "") +
   "match_id=";
 
-// WebSocket-osoitteet
 const TORNEO_WS_URL = "wss://nchan.torneopal.com/lentopallo/";
 const DEBUG_WS_URL = "http://localhost:3000";
-
-// Oletusottelu
 const FALLBACK_MATCH_ID = 685565;
 
-// URL-parametrit: ?id=xxxx&debug&bg
+// ====== URL PARAMS / ENV ======
 const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.has("debug");
 const matchId = urlParams.get("id") || FALLBACK_MATCH_ID;
 
-// Jos id puuttuu, ohjataan samaan osoitteeseen fallback-id:llä
 if (!urlParams.get("id")) {
   window.location.replace(`/?id=${FALLBACK_MATCH_ID}`);
 }
 
-// WebSocketin osoite
 const socketUrl = debug ? DEBUG_WS_URL : TORNEO_WS_URL + matchId;
 
-// Taustan värinvaihto (esim. OBS:ssa bg-parametrilla)
 if (urlParams.has("bg")) {
   document.body.style.background = "slategrey";
 }
 
+// ====== HELPERS ======
 function num(value) {
   const n = Number(value);
   return isNaN(n) ? 0 : n;
 }
 
-
-
-
-
-// --- DOM-ELEMENTIT SCOREBUGIA VARTEN ---
-
+// ====== DOM: SCOREBUG ======
 const periodScore = document.getElementById("period-score");
+const scorebugEl = document.getElementById("scorebug");
 
 const home = {
   name: document.getElementById("home-team"),
@@ -56,58 +48,44 @@ const away = {
   serving: document.getElementById("away-serving"),
 };
 
-// --- LOWER THIRD -ELEMENTIT ---
-
+// ====== DOM: LOWER THIRD ======
 const lower3rdEl = document.getElementById("lower3rd");
-const lower3rdMessage = lower3rdEl
-  ? lower3rdEl.querySelector(".message")
-  : null;
-const lower3rdHome = lower3rdEl
-  ? lower3rdEl.querySelector(".home-team")
-  : null;
-const lower3rdAway = lower3rdEl
-  ? lower3rdEl.querySelector(".away-team")
-  : null;
-const lower3rdScore = lower3rdEl
-  ? lower3rdEl.querySelector(".score")
-  : null;
+const lower3rdMessage = lower3rdEl ? lower3rdEl.querySelector(".message") : null;
+const lower3rdHome = lower3rdEl ? lower3rdEl.querySelector(".home-team") : null;
+const lower3rdAway = lower3rdEl ? lower3rdEl.querySelector(".away-team") : null;
+const lower3rdScore = lower3rdEl ? lower3rdEl.querySelector(".score") : null;
 
-// --- MUUT MUUTTUJAT ---
-
+// ====== STATE ======
 let data = {};
 let socket;
 let reconnectAttempts = 5;
-let lower3rdEnabled = true; // ← TÄMÄ KUULUU TÄNNE (globaaliksi)
+
+let lower3rdEnabled = !!lower3rdEl; // pois päältä automaattisesti jos elementti puuttuu
+
 let prevTimeoutsA = 0;
 let prevTimeoutsB = 0;
 let timeoutBannerActive = false;
 let timeoutBannerTeam = null;
 let timeoutBannerExpiry = 0;
-const TIMEOUT_BANNER_DURATION = 30000; // ms, esim. 30 sekuntia
+const TIMEOUT_BANNER_DURATION = 30000; // ms
+
 let lastFinalSetsA = null;
 let lastFinalSetsB = null;
 
-
-// Pieni ajastin, joka tarkistaa aikalisäbannerin vanhenemisen
+// ====== TIMEOUT EXPIRY TICK ======
 setInterval(() => {
   if (!timeoutBannerActive) return;
 
   if (Date.now() > timeoutBannerExpiry) {
     timeoutBannerActive = false;
     timeoutBannerTeam = null;
-
-    // Päivitetään grafiikka nykyisen datan perusteella ilman timeout-tilaa
-    if (data.match) {
-      setGraphics(data.match);
-    }
+    if (data.match) setGraphics(data.match);
   }
-}, 500); // tarkistetaan 2 kertaa sekunnissa
+}, 500);
 
-
-// --- LOWER THIRD -TILAN MÄÄRITYS ---
-
+// ====== MODE LOGIC ======
 function determineLowerThirdMode(match) {
-  // Scorebugin numerot (käytetään erävoittoina)
+  // Scorebugin numerot = erävoitot
   const setsA = num(match.live_A);
   const setsB = num(match.live_B);
 
@@ -115,58 +93,37 @@ function determineLowerThirdMode(match) {
   const periodA = num(match.live_ps_A);
   const periodB = num(match.live_ps_B);
 
-  // Pelattujen erien määrä (lisäturva, ei pakollinen)
+  // Lisäturva aloitustilanteen erotteluun
   const periodsPlayed = num(match.periods_played);
 
-  // 1) LOPPUTULOS – kun jommalla kummalla vähintään 3 erää
-  if (setsA >= 3 || setsB >= 3) {
-    return "FINAL";
-  }
+  // FINAL: jommalla ≥3
+  if (setsA >= 3 || setsB >= 3) return "FINAL";
 
-  // 2) AIKALISÄ – aikalisä käynnissä (banneri aktiivinen)
-  if (timeoutBannerActive) {
-    return "TIMEOUT";
-  }
+  // TIMEOUT: banneri päällä
+  if (timeoutBannerActive) return "TIMEOUT";
 
-  // 3) ERÄTAUKO – eräpisteet 0–0/tyhjät, mutta erävoittoja jo olemassa
+  // SET_BREAK: eräpisteet nollissa/tyhjät, mutta erävoittoja on
   const periodsAreZero =
-    (!match.live_ps_A && !match.live_ps_B) ||
-    (periodA === 0 && periodB === 0);
+    (!match.live_ps_A && !match.live_ps_B) || (periodA === 0 && periodB === 0);
+  if (periodsAreZero && (setsA + setsB) >= 1) return "SET_BREAK";
 
-  if (periodsAreZero && (setsA + setsB) >= 1) {
-    return "SET_BREAK";
-  }
-
-  // 4) GAME – pelin alussa, ei erävoittoja eikä erän pisteitä
+  // GAME: aloitus, ei erävoittoja eikä eräpisteitä
   if (setsA === 0 && setsB === 0 && periodA === 0 && periodB === 0 && periodsPlayed === 0) {
     return "GAME";
   }
 
-  // Muulloin ei lower3rd-grafiikkaa automaattisesti
+  // muut tilat: ei lower3rd
   return "NONE";
 }
 
-
-
-
-
-
-
-
-
-
-
-
-// --- GRAFIIKAN PÄIVITYS ---
-
+// ====== RENDER ======
 function setGraphics(match) {
   if (!match) return;
 
-  // --- AIKALISÄN TUNNISTUS live_timeouts_A/B-perusteella ---
+  // --- aikalisä tunnistus (counter kasvaa) ---
   const currentTimeoutsA = num(match.live_timeouts_A);
   const currentTimeoutsB = num(match.live_timeouts_B);
 
-  // Jos aikalisien määrä kasvaa, käynnistetään timeout-banneri
   if (currentTimeoutsA > prevTimeoutsA) {
     timeoutBannerActive = true;
     timeoutBannerTeam = "A";
@@ -176,38 +133,30 @@ function setGraphics(match) {
     timeoutBannerTeam = "B";
     timeoutBannerExpiry = Date.now() + TIMEOUT_BANNER_DURATION;
   }
-
   prevTimeoutsA = currentTimeoutsA;
   prevTimeoutsB = currentTimeoutsB;
 
-
-
-  // --- PISTEMUUTTUJAT YHTENÄISESTI NUMEROINA ---
+  // --- pisteet ---
   const liveA = num(match.live_A);
   const liveB = num(match.live_B);
 
-  // Erävoitot: käytetään suoraan scorebugin numeroita
+  // erävoitot = scorebugin numerot
   const setsA = liveA;
   const setsB = liveB;
 
-
-  // Jos live_ps_A / B on tyhjä, käytetään fallbackina liveA / liveB
+  // erän sisäiset pisteet (fallback scorebugin numerot, jos tyhjät)
   const periodA =
-    match.live_ps_A !== undefined &&
-    match.live_ps_A !== null &&
-    match.live_ps_A !== ""
+    match.live_ps_A !== undefined && match.live_ps_A !== null && match.live_ps_A !== ""
       ? num(match.live_ps_A)
       : liveA;
-
   const periodB =
-    match.live_ps_B !== undefined &&
-    match.live_ps_B !== null &&
-    match.live_ps_B !== ""
+    match.live_ps_B !== undefined && match.live_ps_B !== null && match.live_ps_B !== ""
       ? num(match.live_ps_B)
       : liveB;
 
   const mode = determineLowerThirdMode(match);
-  // Jos ollaan LOPPUTULOS-tilassa, lukitaan ensimmäinen ei-nolla tulos talteen
+
+  // FINAL-lukitus
   if (mode === "FINAL") {
     if (lastFinalSetsA === null && lastFinalSetsB === null) {
       if (setsA !== 0 || setsB !== 0) {
@@ -216,21 +165,21 @@ function setGraphics(match) {
       }
     }
   } else {
-    // Kun poistutaan FINAL-tilasta (esim. uusi peli), nollataan lukitus
     lastFinalSetsA = null;
     lastFinalSetsB = null;
   }
 
-
-  // --- SCOREBUG – joukkueet ja live-pisteet ---
-
+  // --- SCOREBUG ---
   home.name.innerText = match.team_A_name || "";
   away.name.innerText = match.team_B_name || "";
 
+  if (scorebugEl && !scorebugEl.classList.contains("show")) {
+    // jos jostain syystä piilossa, älä päivitä näkyväksi automaattisesti
+  }
   home.score.innerText = liveA;
   away.score.innerText = liveB;
 
-  // Eräpisteet / period score
+  // eräpiste-laatikko
   if (!match.live_ps_A && !match.live_ps_B && !match.live_serve_team) {
     periodScore.classList.add("hide");
   } else if (!match.live_ps_A && !match.live_ps_B && match.live_serve_team) {
@@ -243,9 +192,8 @@ function setGraphics(match) {
     periodScore.classList.remove("hide");
   }
 
-  // Syöttöindikaattori
+  // syöttöindikaattori
   const serveTeam = (match.live_serve_team || "").toUpperCase();
-
   if (serveTeam === "A") {
     home.serving.classList.remove("hide");
     away.serving.classList.add("hide");
@@ -257,44 +205,31 @@ function setGraphics(match) {
     away.serving.classList.add("hide");
   }
 
-  // --- LOWER THIRD – automaattinen moodi ---
-
+  // --- LOWER THIRD ---
   if (!lower3rdEl || !lower3rdHome || !lower3rdAway || !lower3rdScore) return;
 
-  // Jos kytkin pois päältä → piilotetaan aina
   if (!lower3rdEnabled) {
     lower3rdEl.classList.remove("in");
     return;
   }
 
-  // Päivitetään aina joukkueiden nimet lower3rdille
   lower3rdHome.innerText = match.team_A_name || "";
   lower3rdAway.innerText = match.team_B_name || "";
 
-  // Jos ei mitään moodia → piilotetaan lower3rd kokonaan
   if (mode === "NONE") {
     lower3rdEl.classList.remove("in");
     return;
   }
 
-  // Muuten varmistetaan että lower3rd on näkyvissä
   lower3rdEl.classList.add("in");
-
-  // Default: näytetään message, ellei GAME-tilaa
-  if (lower3rdMessage) {
-    lower3rdMessage.classList.remove("hide");
-  }
+  if (lower3rdMessage) lower3rdMessage.classList.remove("hide");
 
   if (mode === "GAME") {
-    // GAME – ei pisteitä eikä otsikkaa
-    if (lower3rdMessage) {
-      lower3rdMessage.classList.add("hide");
-    }
+    if (lower3rdMessage) lower3rdMessage.classList.add("hide");
+    lower3rdEl.classList.remove("timeout-mode");
     lower3rdScore.innerText = "";
   } else if (mode === "TIMEOUT") {
-     // Lisää luokka pienentämään fonttia
-  lower3rdEl.classList.add("timeout-mode");
-    // AIKALISÄ – erän sisäiset pisteet + aikalisän ottanut joukkue
+    lower3rdEl.classList.add("timeout-mode");
     if (lower3rdMessage) {
       const teamName =
         timeoutBannerTeam === "A"
@@ -302,44 +237,23 @@ function setGraphics(match) {
           : timeoutBannerTeam === "B"
           ? match.team_B_name || "Vierasjoukkue"
           : "";
-
-      lower3rdMessage.innerText = teamName
-        ? `AIKALISÄ – ${teamName}`
-        : "AIKALISÄ";
+      lower3rdMessage.innerText = teamName ? `AIKALISÄ – ${teamName}` : "AIKALISÄ";
     }
-
-    // Näytetään erän sisäiset pisteet, ei koko pelin erätilannetta
     lower3rdScore.innerText = `${periodA} - ${periodB}`;
   } else if (mode === "SET_BREAK") {
-     // Poistetaan varmuudeksi timeout-luokka
-  lower3rdEl.classList.remove("timeout-mode");
-    // ERÄTAUKO – pelin erätilanne
+    lower3rdEl.classList.remove("timeout-mode");
     if (lower3rdMessage) lower3rdMessage.innerText = "ERÄTAUKO";
     lower3rdScore.innerText = `${setsA} - ${setsB}`;
-
-    
   } else if (mode === "FINAL") {
-  lower3rdEl.classList.remove("timeout-mode");
-
-  // Käytetään lukittua tulosta, jos sellainen on
-  const showSetsA = lastFinalSetsA !== null ? lastFinalSetsA : setsA;
-  const showSetsB = lastFinalSetsB !== null ? lastFinalSetsB : setsB;
-
-  if (lower3rdMessage) lower3rdMessage.innerText = "LOPPUTULOS";
-  lower3rdScore.innerText = `${showSetsA} - ${showSetsB}`;
+    lower3rdEl.classList.remove("timeout-mode");
+    const showSetsA = lastFinalSetsA !== null ? lastFinalSetsA : setsA;
+    const showSetsB = lastFinalSetsB !== null ? lastFinalSetsB : setsB;
+    if (lower3rdMessage) lower3rdMessage.innerText = "LOPPUTULOS";
+    lower3rdScore.innerText = `${showSetsA} - ${showSetsB}`;
+  }
 }
 
-}
-
-
-
-
-
-
-
-
-// --- WEBSOCKET ---
-
+// ====== WS ======
 function connectWebsocket() {
   if (socket) socket.close();
   socket = new WebSocket(socketUrl);
@@ -352,7 +266,6 @@ function connectWebsocket() {
 
   socket.onmessage = (e) => {
     try {
-      // Oletus: websocket palauttaa suoraan match-olion
       const msg = JSON.parse(e.data);
       data.match = msg.match ? msg.match : msg;
       setGraphics(data.match);
@@ -363,9 +276,7 @@ function connectWebsocket() {
 
   socket.onclose = () => {
     if (reconnectAttempts > 0) {
-      console.warn(
-        `WS: Connection lost. Attempting to reconnect in 5 seconds... (${reconnectAttempts} attempts left)`
-      );
+      console.warn(`WS: Connection lost. Reconnecting in 5s... (${reconnectAttempts} left)`);
       reconnectAttempts--;
       setTimeout(connectWebsocket, 5000);
     } else {
@@ -379,19 +290,15 @@ function connectWebsocket() {
   };
 }
 
-
-// --- REST-HAKU ---
-
+// ====== REST ======
 async function fetchMatchData(id) {
   try {
     const response = await fetch(TORNEO_API_BASE + id);
-
     if (!response.ok) {
       const text = await response.text();
-      console.log(">> Something went wrong with fetch:", text);
+      console.log(">> REST error:", text);
       return null;
     }
-
     return await response.json();
   } catch (error) {
     console.error(">> Fetch error:", error);
@@ -399,45 +306,34 @@ async function fetchMatchData(id) {
   }
 }
 
-
-// --- INIT ---
-
+// ====== INIT ======
 async function init() {
-  // Näytä scorebug oletuksena pehmeällä animoinnilla
-if (scorebugEl) scorebugEl.classList.add("show");
-  
-  data = await fetchMatchData(matchId);
+  // scorebug näkyviin pehmeästi alussa
+  if (scorebugEl) scorebugEl.classList.add("show");
 
+  data = await fetchMatchData(matchId);
   if (data) {
-    // REST: oletus että data.match sisältää ottelun
     const initialMatch = data.match ? data.match : data;
     data.match = initialMatch;
     setGraphics(initialMatch);
   }
-
   connectWebsocket();
 }
 
-
-// --- NAPIT: SCOREBUG JA LOWER THIRD ---
-
-const scorebugEl = document.getElementById("scorebug");
+// ====== BUTTONS ======
 const scorebugBtn = document.getElementById("scorebug-btn");
 const lower3rdBtn = document.getElementById("lower3rd-btn");
 
-// Oletus: molemmat päällä alussa
 if (scorebugBtn) scorebugBtn.classList.add("on");
 if (lower3rdBtn) lower3rdBtn.classList.add("on");
 
 if (scorebugBtn && scorebugEl) {
- scorebugBtn.addEventListener("click", () => {
-  const willShow = !scorebugEl.classList.contains("show");
-  scorebugEl.classList.toggle("show", willShow);
-
-  scorebugBtn.classList.toggle("on", willShow);
-  scorebugBtn.classList.toggle("off", !willShow);
-});
-
+  scorebugBtn.addEventListener("click", () => {
+    const willShow = !scorebugEl.classList.contains("show");
+    scorebugEl.classList.toggle("show", willShow);
+    scorebugBtn.classList.toggle("on", willShow);
+    scorebugBtn.classList.toggle("off", !willShow);
+  });
 }
 
 if (lower3rdBtn && lower3rdEl) {
@@ -454,8 +350,5 @@ if (lower3rdBtn && lower3rdEl) {
   });
 }
 
-
-
-// --- KÄYNNISTYS ---
-
+// ====== BOOT ======
 addEventListener("load", init);
