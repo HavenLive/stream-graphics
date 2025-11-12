@@ -36,7 +36,9 @@ span {
   position: relative;
 }
 
-/* SCOREBUG */
+/* ===========================
+   SCOREBUG
+   =========================== */
 
 .scorebug {
   position: relative;
@@ -46,14 +48,19 @@ span {
   left: var(--scorebug-left);
   font-size: var(--scorebug-font-size);
   letter-spacing: 0.03em;
-}
 
-#scorebug.hidden {
+  /* Fade + kevyt nousu (piilossa oletuksena) */
   opacity: 0;
-  visibility: hidden;
-  transition: opacity 200ms ease-out, visibility 0s linear 200ms;
+  transform: translateY(10px);
+  transition: opacity 250ms ease, transform 250ms ease;
+  will-change: opacity, transform;
 }
 
+/* Näkyville (fade in + nousee hieman) */
+.scorebug.show {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 /* Yhteinen tyyli punaisille laatikoille scorebugissa */
 .teams,
@@ -88,20 +95,14 @@ span {
   font-weight: 700;
 }
 
-.game-score {
-  font-size: 1.15em;
-}
-
-.period-score {
-  opacity: 0.9;
-}
+.game-score { font-size: 1.15em; }
+.period-score { opacity: 0.9; }
 
 /* Syöttöikonit */
-
 .serve-indicator {
   padding: 0.3vw 0 0 0.6vw;
   display: flex;
-  flex-direction: column;      /* koti / vieras pystyrivissä */
+  flex-direction: column; /* koti / vieras pystyrivissä */
   justify-content: center;
   row-gap: 0.35vw;
 }
@@ -115,14 +116,20 @@ span {
 .serve-image {
   width: calc(var(--scorebug-font-size) * 1.15);
   filter: drop-shadow(0 0.12vw 0.18vw rgba(0, 0, 0, 0.8));
+  transition: opacity 160ms ease, transform 160ms ease;
+  opacity: 1;
+  transform: scale(1);
 }
 
-/* Piilotusluokka pysyy entisellään */
-.hide {
-  visibility: hidden;
+.hide { visibility: hidden; }
+.hide .serve-image {
+  opacity: 0;
+  transform: scale(0.85);
 }
 
-/* --- NAPIT --- */
+/* ===========================
+   NAPIT
+   =========================== */
 
 button {
   margin: 2vw 3vw;
@@ -139,20 +146,15 @@ button {
   transition: all 0.2s ease-in-out;
   box-shadow: 0 0.25vw 0.6vw rgba(0, 0, 0, 0.4);
 }
-
-/* POIS PÄÄLTÄ */
-button.off {
-  background: #333333;
-}
-
-/* PÄÄLLÄ */
-button.on {
+button.off { background: #333333; }
+button.on  {
   background: linear-gradient(135deg, #ff5252, #c62828);
   box-shadow: 0 0.4vw 0.9vw rgba(255, 80, 80, 0.5);
 }
 
-
-/* LOWER THIRD (alapalkki) */
+/* ===========================
+   LOWER THIRD
+   =========================== */
 
 .lower3rd {
   position: absolute;
@@ -163,28 +165,22 @@ button.on {
   flex-direction: column;
   align-items: center;
 
+  /* Fade + kevyt nousu */
   opacity: 0;
   visibility: hidden;
-  transition: opacity 300ms ease-out, transform 300ms ease-out;
+  transition: opacity 220ms ease, transform 220ms ease;
+  will-change: opacity, transform;
 }
 
-/* Kun elementillä on .in-luokka → näkyy ja liukuu hieman ylöspäin */
+/* Näkyviin (fade in + nousee hieman) */
 .lower3rd.in {
   opacity: 1;
   visibility: visible;
   transform: translate(-50%, 0);
 }
 
-/* Jos haluat käyttää .in luokkaa muuallakin, tämä voi jäädä tukiluokaksi,
-   mutta lower3rdille riittää jo ylempi .lower3rd.in */
-
-
 /* Ylempi teksti (esim. ERÄTAUKO) */
-
-.text-info {
-  display: flex;
-  justify-content: center;
-}
+.text-info { display: flex; justify-content: center; }
 
 .message {
   position: relative;
@@ -202,7 +198,6 @@ button.on {
 }
 
 /* Alempi rivi (joukkue – pisteet – joukkue) */
-
 .game-info {
   display: flex;
   font-size: 2.4vw;
@@ -222,21 +217,9 @@ button.on {
 }
 
 /* Leveydet ja tekstin sijainti */
-
-.home-team,
-.away-team {
-  width: 28vw;
-}
-
-.home-team {
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.away-team {
-  justify-content: flex-start;
-  text-align: left;
-}
+.home-team, .away-team { width: 28vw; }
+.home-team { justify-content: flex-end; text-align: right; }
+.away-team { justify-content: flex-start; text-align: left; }
 
 .score {
   width: 7vw;
@@ -246,66 +229,12 @@ button.on {
   font-weight: 700;
 }
 
-/* Sisääntuloanimaatio lower thirdille, jos haluat käyttää .in-luokkaa */
-
-.in {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 500ms ease-out, visibility 0s linear;
-}
-
 /* Aikalisätilassa pienempi fontti ja tiiviimpi asettelu */
-.lower3rd.timeout-mode .game-info {
-  font-size: 1.8vw;        /* pienempi fontti pisteisiin */
-  gap: 0.1vw;
-}
+.lower3rd.timeout-mode .game-info { font-size: 1.8vw; gap: 0.1vw; }
+.lower3rd.timeout-mode .score { font-weight: 700; transform: scale(0.9); }
+.lower3rd.timeout-mode .message { font-size: 1.2vw; }
 
-.lower3rd.timeout-mode .score {
-  font-weight: 700;
-  transform: scale(0.9);
-}
-
-.lower3rd.timeout-mode .message {
-  font-size: 1.2vw;
-}
-
-/* Animaatiot scorebugille ja lower thirdille */
-.scorebug,
-.lower3rd {
-  opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 250ms ease,
-    transform 250ms ease;
-  will-change: opacity, transform;
-}
-
-/* Näkyvä tila (fade in + nouseva liike) */
-.scorebug.show,
-.lower3rd.in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Vähän nopeampi lower3rd, voi tuntua ketterämmältä */
-.lower3rd {
-  transition:
-    opacity 220ms ease,
-    transform 220ms ease;
-}
-
-/* Kun aikalisä pienentää fonttia, pidetään sama liike/fade */
-.lower3rd.timeout-mode {
-  /* ei tarvitse muuttaa transitioneita */
-}
-
-/* Turvallisuus: jos käyttäjä on asettanut vähennetty animaatio -tilan */
+/* Vähennetty liike -tuki */
 @media (prefers-reduced-motion: reduce) {
-  .scorebug,
-  .lower3rd {
-    transition: none;
-    transform: none;
-  }
+  .scorebug, .lower3rd { transition: none; transform: none !important; }
 }
-
-
