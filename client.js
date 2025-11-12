@@ -60,7 +60,7 @@ let data = {};
 let socket;
 let reconnectAttempts = 5;
 
-let lower3rdEnabled = !!lower3rdEl; // pois päältä automaattisesti jos elementti puuttuu
+let lower3rdEnabled = !!lower3rdEl;
 
 let prevTimeoutsA = 0;
 let prevTimeoutsB = 0;
@@ -144,15 +144,21 @@ function setGraphics(match) {
   const setsA = liveA;
   const setsB = liveB;
 
-  // erän sisäiset pisteet (fallback scorebugin numerot, jos tyhjät)
-  const periodA =
-    match.live_ps_A !== undefined && match.live_ps_A !== null && match.live_ps_A !== ""
-      ? num(match.live_ps_A)
-      : liveA;
-  const periodB =
-    match.live_ps_B !== undefined && match.live_ps_B !== null && match.live_ps_B !== ""
-      ? num(match.live_ps_B)
-      : liveB;
+  // erän sisäiset pisteet (näytetään vain jos numerot saatavilla)
+  const hasPeriodA =
+    match.live_ps_A !== undefined &&
+    match.live_ps_A !== null &&
+    match.live_ps_A !== "" &&
+    !isNaN(Number(match.live_ps_A));
+
+  const hasPeriodB =
+    match.live_ps_B !== undefined &&
+    match.live_ps_B !== null &&
+    match.live_ps_B !== "" &&
+    !isNaN(Number(match.live_ps_B));
+
+  const periodA = hasPeriodA ? Number(match.live_ps_A) : 0;
+  const periodB = hasPeriodB ? Number(match.live_ps_B) : 0;
 
   const mode = determineLowerThirdMode(match);
 
@@ -173,26 +179,19 @@ function setGraphics(match) {
   home.name.innerText = match.team_A_name || "";
   away.name.innerText = match.team_B_name || "";
 
-  if (scorebugEl && !scorebugEl.classList.contains("show")) {
-    // jos jostain syystä piilossa, älä päivitä näkyväksi automaattisesti
-  }
   home.score.innerText = liveA;
   away.score.innerText = liveB;
 
-  // eräpiste-laatikko
-  if (!match.live_ps_A && !match.live_ps_B && !match.live_serve_team) {
+  // Eräpiste-laatikko: näytetään vain jos erä käynnissä (oikeat numerot)
+  if (!hasPeriodA && !hasPeriodB) {
     periodScore.classList.add("hide");
-  } else if (!match.live_ps_A && !match.live_ps_B && match.live_serve_team) {
-    home.periodScore.innerText = 0;
-    away.periodScore.innerText = 0;
-    periodScore.classList.remove("hide");
   } else {
     home.periodScore.innerText = periodA;
     away.periodScore.innerText = periodB;
     periodScore.classList.remove("hide");
   }
 
-  // syöttöindikaattori
+  // Syöttöindikaattori
   const serveTeam = (match.live_serve_team || "").toUpperCase();
   if (serveTeam === "A") {
     home.serving.classList.remove("hide");
