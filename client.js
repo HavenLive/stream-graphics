@@ -182,9 +182,11 @@ function setGraphics(match) {
   home.score.innerText = liveA;
   away.score.innerText = liveB;
 
-  // Eräpiste-laatikko: näytetään vain jos erä käynnissä (oikeat numerot)
-  if (!hasPeriodA && !hasPeriodB) {
-    periodScore.classList.add("hide");
+  // Eräpiste-laatikko:
+  //  - Näkyy vain, jos erä on käynnissä (oikeat numerot)
+  //  - Piilotetaan aina GAME / SET_BREAK / FINAL -tiloissa varmuuden vuoksi
+  if (!hasPeriodA && !hasPeriodB || mode === "GAME" || mode === "SET_BREAK" || mode === "FINAL") {
+    periodScore.classList.add("hide"); // CSS: .period-score.hide { display:none; }
   } else {
     home.periodScore.innerText = periodA;
     away.periodScore.innerText = periodB;
