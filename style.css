@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
 
 :root {
-  /* Päävärit */
+  /* Värit */
   --bg-color: #c62828;
   --bg-gradient: linear-gradient(135deg, #ff5252, #c62828);
   --border-color: #111111;
@@ -13,6 +13,9 @@
   --scorebug-font-size: 1.2vw;
 
   --score-margin: 0.2vw;
+
+  /* Lower3rd pystysiirto (animoitava) */
+  --lt-offset-y: 1.5vw;
 }
 
 body {
@@ -26,9 +29,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-span {
-  display: block;
-}
+span { display: block; }
 
 .overlay {
   width: 100vw;
@@ -36,7 +37,9 @@ span {
   position: relative;
 }
 
-/* SCOREBUG */
+/* ===========================
+   SCOREBUG
+   =========================== */
 
 .scorebug {
   position: relative;
@@ -46,15 +49,25 @@ span {
   left: var(--scorebug-left);
   font-size: var(--scorebug-font-size);
   letter-spacing: 0.03em;
-}
 
-#scorebug.hidden {
+  /* Rauhallinen animaatio: 1.0s + 0.2s viive ulos */
   opacity: 0;
-  visibility: hidden;
-  transition: opacity 1000ms ease 200ms, visibility 0s linear 1200ms;
+  transform: translateY(10px) scale(0.98);
+  transition:
+    opacity 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms,
+    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms;
+  will-change: opacity, transform;
 }
 
-/* --- PUNAISET LAATIKOT --- */
+.scorebug.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 1000ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Punaiset laatikot */
 .teams,
 .game-score,
 .period-score {
@@ -69,14 +82,12 @@ span {
   justify-content: center;
 }
 
-/* Joukkueiden nimet */
 .teams {
   padding: 0.55vw 1.8vw 0.55vw 1vw;
   row-gap: 0.1vw;
   align-items: flex-start;
 }
 
-/* Piste- ja erälaatikot */
 .game-score,
 .period-score {
   width: 2.4em;
@@ -87,16 +98,10 @@ span {
   font-weight: 700;
 }
 
-.game-score {
-  font-size: 1.15em;
-}
-
-.period-score {
-  opacity: 0.9;
-}
+.game-score { font-size: 1.15em; }
+.period-score { opacity: 0.9; }
 
 /* Syöttöikonit */
-
 .serve-indicator {
   padding: 0.3vw 0 0 0.6vw;
   display: flex;
@@ -104,11 +109,8 @@ span {
   justify-content: center;
   row-gap: 0.35vw;
 }
-
 .serve-indicator span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 
 .serve-image {
@@ -116,13 +118,11 @@ span {
   filter: drop-shadow(0 0.12vw 0.18vw rgba(0, 0, 0, 0.8));
   transition: opacity 160ms ease, transform 160ms ease;
 }
+.hide .serve-image { opacity: 0; transform: scale(0.85); }
 
-.hide .serve-image {
-  opacity: 0;
-  transform: scale(0.85);
-}
-
-/* --- NAPIT --- */
+/* ===========================
+   NAPIT
+   =========================== */
 
 button {
   margin: 2vw 3vw;
@@ -139,51 +139,53 @@ button {
   transition: all 0.2s ease-in-out;
   box-shadow: 0 0.25vw 0.6vw rgba(0, 0, 0, 0.4);
 }
-
-/* POIS PÄÄLTÄ */
-button.off {
-  background: #333333;
-}
-
-/* PÄÄLLÄ */
-button.on {
+button.off { background: #333333; }
+button.on  {
   background: linear-gradient(135deg, #ff5252, #c62828);
   box-shadow: 0 0.4vw 0.9vw rgba(255, 80, 80, 0.5);
 }
 
-/* LOWER THIRD (alapalkki) */
+/* ===========================
+   LOWER THIRD
+   =========================== */
 
 .lower3rd {
   position: absolute;
   top: 75%;
   left: 50%;
-  transform: translate(-50%, 1.5vw);
+  /* Keskitys pidetään aina, vain Y siirtyy muuttujalla */
+  transform: translate(-50%, var(--lt-offset-y)) scale(0.98);
   display: flex;
   flex-direction: column;
   align-items: center;
+
   opacity: 0;
   visibility: hidden;
+
+  /* 1.0s + 0.2s viive ulos. Visibility piilotetaan vasta anim jälkeen */
   transition:
     opacity 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms,
-    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms;
+    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms,
+    visibility 0s linear 1200ms;
+  will-change: opacity, transform;
 }
 
-/* Kun elementillä on .in-luokka → näkyy ja liukuu ylös */
 .lower3rd.in {
   opacity: 1;
   visibility: visible;
-  transform: translate(-50%, 0);
+  /* Siirrä ylös ja “aseta” paikalleen */
+  --lt-offset-y: 0;
+  transform: translate(-50%, var(--lt-offset-y)) scale(1);
+
+  /* Sisään ilman viivettä */
   transition:
     opacity 1000ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s;
 }
 
-/* Ylempi teksti (esim. ERÄTAUKO) */
-
-.text-info {
-  display: flex;
-  justify-content: center;
-}
+/* Ylempi teksti */
+.text-info { display: flex; justify-content: center; }
 
 .message {
   position: relative;
@@ -200,101 +202,39 @@ button.on {
   letter-spacing: 0.08em;
 }
 
-/* Alempi rivi (joukkue – pisteet – joukkue) */
-
+/* Alempi rivi */
 .game-info {
   display: flex;
   font-size: 2.4vw;
   align-items: stretch;
   gap: 0.2vw;
 }
-
 .game-info > div {
   position: relative;
   background: var(--bg-gradient);
   border: 1px solid var(--border-color);
   box-shadow: 0 0.35vw 0.7vw var(--shadow-color);
   padding: 0.5vw 1vw;
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
   border-radius: 0.6vw;
 }
 
-/* Leveydet ja tekstin sijainti */
-.home-team,
-.away-team {
-  width: 28vw;
-}
-
-.home-team {
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.away-team {
-  justify-content: flex-start;
-  text-align: left;
-}
+/* Leveydet */
+.home-team, .away-team { width: 28vw; }
+.home-team { justify-content: flex-end; text-align: right; }
+.away-team { justify-content: flex-start; text-align: left; }
 
 .score {
-  width: 7vw;
-  margin: 0;
-  justify-content: center;
-  text-align: center;
-  font-weight: 700;
+  width: 7vw; margin: 0;
+  justify-content: center; text-align: center; font-weight: 700;
 }
 
-/* Aikalisätilassa pienempi fontti ja tiiviimpi asettelu */
-.lower3rd.timeout-mode .game-info {
-  font-size: 1.8vw;
-  gap: 0.1vw;
-}
+/* Aikalisätilassa tiiviimpi */
+.lower3rd.timeout-mode .game-info { font-size: 1.8vw; gap: 0.1vw; }
+.lower3rd.timeout-mode .score { font-weight: 700; transform: scale(0.9); }
+.lower3rd.timeout-mode .message { font-size: 1.2vw; }
 
-.lower3rd.timeout-mode .score {
-  font-weight: 700;
-  transform: scale(0.9);
-}
-
-.lower3rd.timeout-mode .message {
-  font-size: 1.2vw;
-}
-
-/* --- Animaatiot (fade + slide 1s) --- */
-.scorebug,
-.lower3rd {
-  opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms,
-    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms;
-  will-change: opacity, transform;
-}
-
-/* Näkyvä tila (fade in + nouseva liike) */
-.scorebug.show,
-.lower3rd.in {
-  opacity: 1;
-  transform: translateY(0);
-  transition:
-    opacity 1000ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Fade out -tilassa (laskeva liike ja viive) */
-.scorebug:not(.show),
-.lower3rd:not(.in) {
-  opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms,
-    transform 1000ms cubic-bezier(0.4, 0, 0.2, 1) 200ms;
-}
-
-/* Turvallisuus: jos käyttäjä on asettanut vähennetty animaatio -tilan */
+/* Vähennetty liike -tuki */
 @media (prefers-reduced-motion: reduce) {
-  .scorebug,
-  .lower3rd {
-    transition: none;
-    transform: none;
-  }
+  .scorebug, .lower3rd { transition: none; transform: none !important; }
 }
