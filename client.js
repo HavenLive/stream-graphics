@@ -2,7 +2,7 @@
    Volleyball Graphics Controller
    - Upcoming: names only (no empty boxes)
    - Live: full graphics
-   - Finished: final result on lower third
+   - Finished: final result on lower third & scorebug
    - Hotkeys: A = scorebug, B = lower third
    ============================================================ */
 
@@ -101,10 +101,10 @@ function renderUpcoming(match) {
     periodBoxEl.style.display = "";
   }
 
-  if (homeScoreEl) homeScoreEl.textContent = "";
-  if (awayScoreEl) awayScoreEl.textContent = "";
-  if (homePeriodEl) homePeriodEl.textContent = "";
-  if (awayPeriodEl) awayPeriodEl.textContent = "";
+  homeScoreEl.textContent = "";
+  awayScoreEl.textContent = "";
+  homePeriodEl.textContent = "";
+  awayPeriodEl.textContent = "";
 
   if (homeServeEl) homeServeEl.classList.add("hide");
   if (awayServeEl) awayServeEl.classList.add("hide");
@@ -115,10 +115,10 @@ function renderUpcoming(match) {
     hideElement(l3TextBox);
     hideElement(l3ScoreBox);
 
-    if (l3Message) l3Message.textContent = "";
-    if (l3Home) l3Home.textContent = match.team_A_name;
-    if (l3Away) l3Away.textContent = match.team_B_name;
-    if (l3Score) l3Score.textContent = "";
+    l3Message.textContent = "";
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    l3Score.textContent = "";
   } else {
     lower3rdEl.classList.remove("in");
   }
@@ -130,7 +130,7 @@ function renderUpcoming(match) {
 /*
   Pelin aikana:
   - Scorebug: kaikki näkyvillä (pisteet, erät, syöttö)
-  - Lower third: joukkueet + pistelaatikko, ei ylätekstiboksia ellei erikseen käytetä
+  - Lower third: joukkueet + pistelaatikko (pisteet), ei ylätekstiboksia
 */
 function renderLive(match) {
   if (!match) return;
@@ -145,14 +145,21 @@ function renderLive(match) {
     periodBoxEl.style.display = "";
   }
 
+  const scoreA = num(match.score_A);
+  const scoreB = num(match.score_B);
+  const setsA  = num(match.sets_A);
+  const setsB  = num(match.sets_B);
+
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
 
-  homeScoreEl.textContent = num(match.score_A);
-  awayScoreEl.textContent = num(match.score_B);
+  // Pelin aikana isossa boksissa nykyiset eräpisteet
+  homeScoreEl.textContent = scoreA;
+  awayScoreEl.textContent = scoreB;
 
-  homePeriodEl.textContent = num(match.sets_A);
-  awayPeriodEl.textContent = num(match.sets_B);
+  // Pieni eräboksi: voitetut erät
+  homePeriodEl.textContent = setsA;
+  awayPeriodEl.textContent = setsB;
 
   const serve = match.serve;
   if (homeServeEl) homeServeEl.classList.toggle("hide", serve !== "A");
@@ -164,10 +171,11 @@ function renderLive(match) {
     hideElement(l3TextBox);
     showElement(l3ScoreBox);
 
-    if (l3Message) l3Message.textContent = "";
-    if (l3Home) l3Home.textContent = match.team_A_name;
-    if (l3Away) l3Away.textContent = match.team_B_name;
-    if (l3Score) l3Score.textContent = `${match.score_A} - ${match.score_B}`;
+    l3Message.textContent = "";
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    // Pelin aikana alarivillä myös eräpisteet (voit halutessa vaihtaa)
+    l3Score.textContent = `${scoreA} - ${scoreB}`;
   } else {
     lower3rdEl.classList.remove("in");
   }
@@ -178,8 +186,8 @@ function renderLive(match) {
    ============================ */
 /*
   Pelin jälkeen:
-  - Scorebug: lopulliset pisteet ja erät näkyvät (myös aiemmin piilotetut laatikot)
-  - Lower third: "LOPPUTULOS" ylälaatikossa + lopputulos pistelaatikossa
+  - Scorebug: kaikki laatikot näkyvissä, isossa boksissa LOPULLISET ERÄT
+  - Lower third: "LOPPUTULOS" + lopputuloksen erät
 */
 function renderFinished(match) {
   if (!match) return;
@@ -194,28 +202,45 @@ function renderFinished(match) {
     periodBoxEl.style.display = "";
   }
 
+  const scoreA = num(match.score_A);
+  const scoreB = num(match.score_B);
+  const setsA  = num(match.sets_A);
+  const setsB  = num(match.sets_B);
+
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
 
-  homeScoreEl.textContent = num(match.score_A);
-  awayScoreEl.textContent = num(match.score_B);
+  // Jos Torneo on nollannut pisteet (0–0) pelin jälkeen, näytetään erät pääboksissa
+  const useSetsAsMainScore =
+    (scoreA === 0 && scoreB === 0 && (setsA > 0 || setsB > 0));
 
-  homePeriodEl.textContent = num(match.sets_A);
-  awayPeriodEl.textContent = num(match.sets_B);
+  const mainHome = useSetsAsMainScore ? setsA : scoreA;
+  const mainAway = useSetsAsMainScore ? setsB : scoreB;
 
+  // ISON BOKSIN LOPPUTULOS
+  homeScoreEl.textContent = mainHome;
+  awayScoreEl.textContent = mainAway;
+
+  // ERÄBOKSISSA AINA VOITETUT ERÄT (LOPPUTULOS DATA)
+  homePeriodEl.textContent = setsA;
+  awayPeriodEl.textContent = setsB;
+
+  // Syöttö pois lopussa
   if (homeServeEl) homeServeEl.classList.add("hide");
   if (awayServeEl) awayServeEl.classList.add("hide");
 
+  // LOWER THIRD: LOPPUTULOS + lopulliset erät
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
 
     showElement(l3TextBox);
     showElement(l3ScoreBox);
 
-    if (l3Message) l3Message.textContent = "LOPPUTULOS";
-    if (l3Home) l3Home.textContent = match.team_A_name;
-    if (l3Away) l3Away.textContent = match.team_B_name;
-    if (l3Score) l3Score.textContent = `${match.score_A} - ${match.score_B}`;
+    l3Message.textContent = "LOPPUTULOS";
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    // TÄSSÄ ON LOPPUTULOKSEN PISTEET = ERÄT
+    l3Score.textContent = `${setsA} - ${setsB}`;
   } else {
     lower3rdEl.classList.remove("in");
   }
@@ -228,10 +253,10 @@ function renderFinished(match) {
 function updateGraphics(match) {
   latestMatch = match;
 
-  const scoreA = num(match.score_A);
-  const scoreB = num(match.score_B);
-  const setsA = num(match.sets_A);
-  const setsB = num(match.sets_B);
+  const scoreA   = num(match.score_A);
+  const scoreB   = num(match.score_B);
+  const setsA    = num(match.sets_A);
+  const setsB    = num(match.sets_B);
   const setIndex = num(match.set_index);
 
   const isFinished =
@@ -239,11 +264,11 @@ function updateGraphics(match) {
     setsA === 3 ||
     setsB === 3;
 
-  // Upcoming vain jos peli ei ole finished JA kaikki nollilla
+  // Upcoming vain jos KAIKKI nollilla (myös erät)
   const isUpcoming =
     !isFinished &&
     (match.status === "upcoming" ||
-      (scoreA === 0 && scoreB === 0 && setIndex === 0 && setsA === 0 && setsB === 0));
+      (scoreA === 0 && scoreB === 0 && setsA === 0 && setsB === 0 && setIndex === 0));
 
   if (debug) {
     console.log("updateGraphics", {
