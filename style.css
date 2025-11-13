@@ -1,37 +1,45 @@
-/* ========= ROOT VARIABLES ========= */
-:root {
-  --bg-gradient: linear-gradient(135deg, #ff6b6b, #8b0000);
-  --shadow-color: rgba(0, 0, 0, 0.8);
-  --border-color: rgba(255, 255, 255, 0.35);
+/* ============================================================
+   NEW VMIX-OPTIMIZED CSS
+   Clean, strong contrast, broadcast-safe styling
+   ============================================================ */
 
-  --text-color: #ffffff;
-  --font-main: "Segoe UI", Arial, sans-serif;
+/* ---------- VARIABLES ---------- */
+:root {
+  --main-grad: linear-gradient(135deg, #ff6b6b, #9b0000);
+  --border-color: rgba(255,255,255,0.4);
+  --shadow: 0 0.6vw 1.2vw rgba(0,0,0,0.85);
+  --text: #ffffff;
+  --font: "Segoe UI", Arial, sans-serif;
 }
 
-/* ========= GLOBAL RESET ========= */
+/* ---------- GLOBAL ---------- */
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: var(--font-main);
   background: #ffffff;
+  font-family: var(--font);
   user-select: none;
 }
 
-/* ========= SCOREBUG ========= */
+/* ============================================================
+   SCOREBUG
+   ============================================================ */
+
 #scorebug {
   position: absolute;
-  top: 2vw;
-  left: 2vw;
+  top: 1.8vw;
+  left: 1.8vw;
   display: flex;
-  flex-direction: column;
-  gap: 0.3vw;
-  padding: 0.6vw 0.8vw;
-  border-radius: 0.5vw;
+  align-items: center;
+  gap: 0.8vw;
+  padding: 0.5vw 0.7vw;
 
-  background: var(--bg-gradient);
+  background: var(--main-grad);
   border: 1px solid var(--border-color);
-  box-shadow: 0 0.6vw 1.2vw var(--shadow-color);
+  border-radius: 0.4vw;
+  color: var(--text);
+  box-shadow: var(--shadow);
 
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -41,75 +49,78 @@ body {
   opacity: 1;
 }
 
-/* ========= SCOREBUG CONTENT ========= */
-.teams {
+/* Team name column (A/B) */
+.team-box {
   display: flex;
   flex-direction: column;
-  font-size: 1vw;
-  color: var(--text-color);
+  font-size: 0.95vw;
+  line-height: 1.3vw;
 
-  background: var(--bg-gradient);
+  background: var(--main-grad);
   border: 1px solid var(--border-color);
-  border-radius: 0.4vw;
-  padding: 0.3vw 0.6vw;
-  box-shadow: 0 0.5vw 1vw var(--shadow-color);
+  border-radius: 0.3vw;
+  padding: 0.4vw 0.7vw;
+  box-shadow: var(--shadow);
 }
 
-.game-score {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.6vw;
+/* Big points */
+.score-box {
+  font-size: 1.7vw;
   font-weight: bold;
-  color: var(--text-color);
-  height: 2.2vw;
-  width: 2.6vw;
+  min-width: 2.7vw;
+  height: 2.3vw;
 
-  background: var(--bg-gradient);
-  border: 1px solid var(--border-color);
-  border-radius: 0.4vw;
-  box-shadow: 0 0.5vw 1vw var(--shadow-color);
-}
-
-.period-score {
   display: flex;
-  justify-content: center;
   align-items: center;
-  font-size: 0.9vw;
-  color: var(--text-color);
-  height: 1.4vw;
-  width: 2.2vw;
+  justify-content: center;
 
-  background: var(--bg-gradient);
+  background: var(--main-grad);
   border: 1px solid var(--border-color);
-  border-radius: 0.4vw;
-  box-shadow: 0 0.5vw 1vw var(--shadow-color);
+  border-radius: 0.3vw;
+  box-shadow: var(--shadow);
 }
 
-/* ========= SERVING ICON ========= */
+/* Sets won */
+.sets-box {
+  font-size: 0.9vw;
+  font-weight: 600;
+  min-width: 2.2vw;
+  height: 1.5vw;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--main-grad);
+  border: 1px solid var(--border-color);
+  border-radius: 0.3vw;
+  box-shadow: var(--shadow);
+}
+
+/* Serving indicator */
 .serving {
-  position: absolute;
-  right: -0.8vw;
-  top: 50%;
-  width: 0.7vw;
-  height: 0.7vw;
+  width: 0.8vw;
+  height: 0.8vw;
   border-radius: 50%;
   background: #ffeb3b;
-  transform: translateY(-50%);
-  box-shadow: 0 0 0.4vw rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0.4vw rgba(0,0,0,0.6);
 }
+
 .hide {
   display: none !important;
 }
 
-/* ========= LOWER THIRD ========= */
+/* ============================================================
+   LOWER THIRD
+   ============================================================ */
+
 #lower3rd {
   position: absolute;
-  bottom: 4vw;
+  bottom: 3vw;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 0.4vw;
+  gap: 0.6vw;
   align-items: center;
 
   opacity: 0;
@@ -120,28 +131,29 @@ body {
   opacity: 1;
 }
 
-.lower-box {
-  background: var(--bg-gradient);
+/* Generic box for lower third elements */
+.l3-box {
+  padding: 0.7vw 1.4vw;
+  background: var(--main-grad);
   border: 1px solid var(--border-color);
-  padding: 0.6vw 1vw;
   border-radius: 0.4vw;
-  font-size: 1.2vw;
-  color: var(--text-color);
-  box-shadow: 0 0.6vw 1.2vw var(--shadow-color);
+  color: var(--text);
   white-space: nowrap;
-  display: flex;
-  align-items: center;
+  box-shadow: var(--shadow);
+  font-size: 1.25vw;
+  font-weight: 500;
 }
 
-/* Message box (ERÄTAUKO / AIKALISÄ) */
-.message {
-  padding: 0.4vw 1vw;
-  font-size: 1.1vw;
+.l3-message {
+  font-size: 1.15vw;
   font-weight: 600;
   letter-spacing: 0.05vw;
 }
 
-/* ========= CONTROL BUTTONS ========= */
+/* ============================================================
+   CONTROL BUTTONS (Scorebug / Lower3rd)
+   ============================================================ */
+
 #controls {
   position: absolute;
   bottom: 1.5vw;
@@ -152,23 +164,25 @@ body {
 
 button {
   padding: 0.6vw 1.2vw;
-  background: #b03030;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 0.4vw;
-  color: white;
   font-size: 1vw;
+  border-radius: 0.4vw;
+  background: #b03030;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.4);
   cursor: pointer;
-  box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.7);
+
+  box-shadow: 0 0.4vw 0.8vw rgba(0,0,0,0.7);
   transition: transform 0.15s ease, opacity 0.15s;
 }
 
 button:hover {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
 button.on {
   opacity: 1;
 }
+
 button.off {
   opacity: 0.4;
 }
