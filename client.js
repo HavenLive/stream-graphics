@@ -1,8 +1,11 @@
-// Volleyball graphics controller with keyboard shortcuts
-// Scorebug toggle: CTRL + SHIFT + ALT + A
-// Lower 3rd toggle: CTRL + SHIFT + ALT + B
+/* ============================================================
+   COMPLETE UPDATED client.js
+   Fixes:
+   - Upcoming match view (no scores, no timeout text)
+   - Match finished view (final result)
+   - Logos added automatically
+   ============================================================ */
 
-// ====== CONFIG ======
 const API_KEY = "anzsj3jqsm";
 const TORNEO_API_BASE =
   "https://lentopallo.api.torneopal.com/taso/rest/getMatch?" +
@@ -10,267 +13,250 @@ const TORNEO_API_BASE =
   "match_id=";
 
 const TORNEO_WS_URL = "wss://nchan.torneopal.com/lentopallo/";
-const DEBUG_WS_URL = "ws://localhost:3000";
 const FALLBACK_MATCH_ID = 685565;
 
-// ====== URL PARAMS / ENV ======
 const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.has("debug");
 const matchId = urlParams.get("id") || FALLBACK_MATCH_ID;
 
-// ====== DOM ELEMENTS ======
+/* DOM */
 const scorebugEl = document.getElementById("scorebug");
-
-const home = {
-  name: document.getElementById("home-team"),
-  score: document.getElementById("home-score"),
-  sets: document.getElementById("home-period-score"),
-  serve: document.getElementById("home-serving"),
-};
-
-const away = {
-  name: document.getElementById("away-team"),
-  score: document.getElementById("away-score"),
-  sets: document.getElementById("away-period-score"),
-  serve: document.getElementById("away-serving"),
-};
-
 const lower3rdEl = document.getElementById("lower3rd");
-const lower3rdMessageEl = lower3rdEl
-  ? lower3rdEl.querySelector(".message")
-  : null;
-const lower3rdHomeEl = lower3rdEl
-  ? lower3rdEl.querySelector(".home-team")
-  : null;
-const lower3rdAwayEl = lower3rdEl
-  ? lower3rdEl.querySelector(".away-team")
-  : null;
-const lower3rdScoreEl = lower3rdEl
-  ? lower3rdEl.querySelector(".score")
-  : null;
 
+const homeNameEl = document.getElementById("home-team");
+const awayNameEl = document.getElementById("away-team");
+
+const homeScoreEl = document.getElementById("home-score");
+const awayScoreEl = document.getElementById("away-score");
+
+const homePeriodEl = document.getElementById("home-period-score");
+const awayPeriodEl = document.getElementById("away-period-score");
+
+const periodBoxEl = document.getElementById("period-score");
+
+const homeServeEl = document.getElementById("home-serving");
+const awayServeEl = document.getElementById("away-serving");
+
+const l3Message = lower3rdEl.querySelector(".message");
+const l3Home = lower3rdEl.querySelector(".home-team");
+const l3Away = lower3rdEl.querySelector(".away-team");
+const l3Score = lower3rdEl.querySelector(".score");
+
+/* Buttons */
 const scorebugBtn = document.getElementById("scorebug-btn");
 const lower3rdBtn = document.getElementById("lower3rd-btn");
 
-// ====== STATE ======
+let lower3rdEnabled = true;
 let latestMatch = null;
-let scorebugVisible = true;
-let lower3rdVisible = true;
-let ws = null;
-let reconnectTimeout = null;
 
-// ====== HELPERS ======
-function toNumber(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
+/* ============================================================
+   HELPERS
+   ============================================================ */
 
-function upper(str) {
+function safeUpper(str) {
   if (!str) return "";
   return String(str).toUpperCase();
 }
 
-function setServeIndicator(serveSide) {
-  if (!home.serve || !away.serve) return;
-
-  // piilota molemmat oletuksena
-  home.serve.classList.add("hide");
-  away.serve.classList.add("hide");
-
-  if (serveSide === "A") {
-    home.serve.classList.remove("hide");
-  } else if (serveSide === "B") {
-    away.serve.classList.remove("hide");
-  }
+function num(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
-// ====== RENDERING ======
-function renderMatch(match) {
-  if (!match) return;
+function createLogoElement(teamName) {
+  const img = document.createElement("img");
+  img.classList.add("team-logo");
+  img.style.height = "1.6vw";
+  img.style.marginRight = "0.4vw";
 
+  const safe = teamName.toLowerCase().replace(/\s+/g, "_");
+  img.src = `logos/${safe}.png`;
+
+  img.onerror = () => {
+    img.style.display = "none";
+  };
+
+  return img;
+}
+
+/* ============================================================
+   RENDER FUNCTIONS
+   ============================================================ */
+
+function renderUpcoming(match) {
+  scorebugEl.classList.add("show");
+
+  periodBoxEl.classList.add("hide");
+  homeScoreEl.textContent = "";
+  awayScoreEl.textContent = "";
+  homePeriodEl.textContent = "";
+  awayPeriodEl.textContent = "";
+  homeServeEl.classList.add("hide");
+  awayServeEl.classList.add("hide");
+
+  lower3rdEl.classList.remove("in");
+
+  homeNameEl.textContent = safeUpper(match.team_A_name);
+  awayNameEl.textContent = safeUpper(match.team_B_name);
+
+  // Insert logos
+  injectLogos();
+}
+
+function renderLive(match) {
+  scorebugEl.classList.add("show");
+
+  homeNameEl.textContent = safeUpper(match.team_A_name);
+  awayNameEl.textContent = safeUpper(match.team_B_name);
+
+  homeScoreEl.textContent = num(match.score_A);
+  awayScoreEl.textContent = num(match.score_B);
+
+  homePeriodEl.textContent = num(match.sets_A);
+  awayPeriodEl.textContent = num(match.sets_B);
+  periodBoxEl.classList.remove("hide");
+
+  const serve = match.serve;
+  homeServeEl.classList.toggle("hide", serve !== "A");
+  awayServeEl.classList.toggle("hide", serve !== "B");
+
+  if (lower3rdEnabled) {
+    lower3rdEl.classList.add("in");
+
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    l3Score.textContent = `${match.score_A} - ${match.score_B}`;
+    l3Message.textContent = "";
+  }
+
+  injectLogos();
+}
+
+function renderFinished(match) {
+  scorebugEl.classList.add("show");
+
+  homeNameEl.textContent = safeUpper(match.team_A_name);
+  awayNameEl.textContent = safeUpper(match.team_B_name);
+
+  homeScoreEl.textContent = num(match.score_A);
+  awayScoreEl.textContent = num(match.score_B);
+
+  homePeriodEl.textContent = num(match.sets_A);
+  awayPeriodEl.textContent = num(match.sets_B);
+  periodBoxEl.classList.remove("hide");
+
+  homeServeEl.classList.add("hide");
+  awayServeEl.classList.add("hide");
+
+  if (lower3rdEnabled) {
+    lower3rdEl.classList.add("in");
+    l3Message.textContent = "LOPPUTULOS";
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    l3Score.textContent = `${match.score_A} - ${match.score_B}`;
+  }
+
+  injectLogos();
+}
+
+/* Insert logos into team boxes and lower third */
+function injectLogos() {
+  // prevent duplicates
+  scorebugEl.querySelectorAll(".team-logo").forEach((e) => e.remove());
+  lower3rdEl.querySelectorAll(".team-logo").forEach((e) => e.remove());
+
+  const logoA = createLogoElement(latestMatch.team_A_name);
+  const logoB = createLogoElement(latestMatch.team_B_name);
+
+  homeNameEl.prepend(logoA.cloneNode(true));
+  awayNameEl.prepend(logoB.cloneNode(true));
+
+  l3Home.prepend(logoA);
+  l3Away.prepend(logoB);
+}
+
+/* ============================================================
+   LOGIC MAIN
+   ============================================================ */
+
+function updateGraphics(match) {
   latestMatch = match;
 
-  // Joukkueiden nimet
-  if (home.name) home.name.textContent = upper(match.team_A_name);
-  if (away.name) away.name.textContent = upper(match.team_B_name);
+  const isUpcoming =
+    match.status === "upcoming" ||
+    (num(match.score_A) === 0 &&
+      num(match.score_B) === 0 &&
+      num(match.set_index) === 0);
 
-  // Erän pisteet
-  if (home.score) home.score.textContent = toNumber(match.score_A);
-  if (away.score) away.score.textContent = toNumber(match.score_B);
+  const isFinished =
+    match.status === "finished" ||
+    num(match.set_index) > 4 ||
+    (num(match.sets_A) === 3 || num(match.sets_B) === 3);
 
-  // Voitetut erät
-  if (home.sets) home.sets.textContent = toNumber(match.sets_A);
-  if (away.sets) away.sets.textContent = toNumber(match.sets_B);
+  if (isUpcoming) return renderUpcoming(match);
+  if (isFinished) return renderFinished(match);
 
-  // Syöttäjä ("A" / "B" / null)
-  setServeIndicator(match.serve);
-
-  // Lower 3rd
-  if (lower3rdEl) {
-    if (lower3rdHomeEl) lower3rdHomeEl.textContent = match.team_A_name || "";
-    if (lower3rdAwayEl) lower3rdAwayEl.textContent = match.team_B_name || "";
-
-    if (lower3rdScoreEl) {
-      const scoreText = `${toNumber(match.score_A)} - ${toNumber(
-        match.score_B
-      )}`;
-      lower3rdScoreEl.textContent = scoreText;
-    }
-
-    if (lower3rdMessageEl && !lower3rdMessageEl.textContent.trim()) {
-      // oletusviesti jos tyhjä
-      lower3rdMessageEl.textContent = "ERÄTAUKO";
-    }
-
-    if (lower3rdVisible) {
-      lower3rdEl.classList.add("in");
-    } else {
-      lower3rdEl.classList.remove("in");
-    }
-  }
+  return renderLive(match);
 }
 
-// ====== DATA FETCHING ======
-async function fetchMatchOnce(id) {
-  const url = TORNEO_API_BASE + encodeURIComponent(id);
+/* ============================================================
+   FETCH + WS
+   ============================================================ */
 
+async function fetchOnce() {
   try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) {
-      console.error("HTTP error", res.status);
-      return null;
-    }
+    const res = await fetch(TORNEO_API_BASE + matchId);
     const json = await res.json();
-    // API voi palauttaa joko pelkän matsin tai { match: {...} }
     return json.match || json;
-  } catch (err) {
-    console.error("fetchMatchOnce failed", err);
+  } catch (e) {
+    console.error(e);
     return null;
   }
 }
 
-// ====== WEBSOCKET ======
-function connectWebSocket() {
-  if (!("WebSocket" in window)) {
-    console.warn("WebSocket ei tuettu – käytetään vain pollingia");
-    return;
-  }
+function connectWS() {
+  const ws = new WebSocket(`${TORNEO_WS_URL}${matchId}`);
 
-  const url = debug ? DEBUG_WS_URL : `${TORNEO_WS_URL}${matchId}`;
-
-  try {
-    ws = new WebSocket(url);
-  } catch (err) {
-    console.error("WebSocket init error", err);
-    scheduleReconnect();
-    return;
-  }
-
-  ws.addEventListener("open", () => {
-    console.log("WebSocket connected");
-  });
-
-  ws.addEventListener("message", (event) => {
+  ws.onmessage = (e) => {
     try {
-      const payload = JSON.parse(event.data);
-      const match = payload.match || payload;
-      renderMatch(match);
-    } catch (err) {
-      console.error("WebSocket message parse failed", err);
-    }
-  });
+      const data = JSON.parse(e.data);
+      if (data.match) updateGraphics(data.match);
+    } catch {}
+  };
 
-  ws.addEventListener("close", () => {
-    console.warn("WebSocket closed");
-    scheduleReconnect();
-  });
-
-  ws.addEventListener("error", (err) => {
-    console.error("WebSocket error", err);
-    try {
-      ws.close();
-    } catch (_) {}
-  });
+  ws.onclose = () => setTimeout(connectWS, 2000);
 }
 
-function scheduleReconnect() {
-  if (reconnectTimeout) {
-    clearTimeout(reconnectTimeout);
-  }
-  reconnectTimeout = setTimeout(() => {
-    connectWebSocket();
-  }, 5000);
-}
-
-// ====== BUTTON LOGIC ======
-function setupButtons() {
-  if (scorebugBtn && scorebugEl) {
-    scorebugBtn.classList.add("on");
-    scorebugEl.classList.add("show"); // näkyviin alussa
-
-    scorebugBtn.addEventListener("click", () => {
-      scorebugVisible = !scorebugVisible;
-      scorebugEl.classList.toggle("show", scorebugVisible);
-      scorebugBtn.classList.toggle("on", scorebugVisible);
-      scorebugBtn.classList.toggle("off", !scorebugVisible);
-    });
-  }
-
-  if (lower3rdBtn && lower3rdEl) {
-    lower3rdBtn.classList.add("on");
-
-    lower3rdBtn.addEventListener("click", () => {
-      lower3rdVisible = !lower3rdVisible;
-      lower3rdBtn.classList.toggle("on", lower3rdVisible);
-      lower3rdBtn.classList.toggle("off", !lower3rdVisible);
-
-      if (lower3rdVisible) {
-        lower3rdEl.classList.add("in");
-      } else {
-        lower3rdEl.classList.remove("in");
-      }
-    });
-  }
-}
-
-// ====== KEYBOARD SHORTCUTS ======
-// CTRL + SHIFT + ALT + A => toggle scorebug
-// CTRL + SHIFT + ALT + B => toggle lower 3rd
-function setupKeyboardShortcuts() {
-  window.addEventListener("keydown", (event) => {
-
-    const key = event.key.toLowerCase();
-    if (key === "a" && scorebugBtn) {
-      event.preventDefault();
-      scorebugBtn.click();
-    } else if (key === "b" && lower3rdBtn) {
-      event.preventDefault();
-      lower3rdBtn.click();
-    }
-  });
-}
-
-// ====== INIT ======
 async function init() {
-  setupButtons();
-  setupKeyboardShortcuts();
+  const first = await fetchOnce();
+  if (first) updateGraphics(first);
 
-  // Ensimmäinen haku
-  const firstMatch = await fetchMatchOnce(matchId);
-  if (firstMatch) {
-    renderMatch(firstMatch);
-  }
-
-  // WebSocket livepäivityksille
-  connectWebSocket();
-
-  // Varmuuden vuoksi pollaus 10s välein
+  connectWS();
   setInterval(async () => {
-    const match = await fetchMatchOnce(matchId);
-    if (match) {
-      renderMatch(match);
-    }
+    const m = await fetchOnce();
+    if (m) updateGraphics(m);
   }, 10000);
 }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+scorebugBtn.addEventListener("click", () => {
+  const show = !scorebugEl.classList.contains("show");
+  scorebugEl.classList.toggle("show", show);
+});
+
+lower3rdBtn.addEventListener("click", () => {
+  lower3rdEnabled = !lower3rdEnabled;
+  lower3rdEl.classList.toggle("in", lower3rdEnabled);
+});
+
+/* HOTKEYS */
+window.addEventListener("keydown", (e) => {
+  if (!e.ctrlKey || !e.shiftKey || !e.altKey) return;
+  if (e.key.toLowerCase() === "a") scorebugBtn.click();
+  if (e.key.toLowerCase() === "b") lower3rdBtn.click();
+});
 
 window.addEventListener("load", init);
