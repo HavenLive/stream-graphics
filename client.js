@@ -1,9 +1,9 @@
 /* ============================================================
    CLEAN AND STABLE client.js
-   - No logos
-   - Upcoming match view (names only)
-   - Live view (normal)
-   - Finished match view (final result)
+   - Upcoming: names only, no boxes
+   - Live match: full graphics
+   - Finished: final result lower3rd
+   - Hotkeys: A = scorebug, B = lower3rd
    ============================================================ */
 
 const API_KEY = "anzsj3jqsm";
@@ -19,7 +19,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.has("debug");
 const matchId = urlParams.get("id") || FALLBACK_MATCH_ID;
 
-/* DOM ELEMENTS */
+/* DOM */
 const scorebugEl = document.getElementById("scorebug");
 const lower3rdEl = document.getElementById("lower3rd");
 
@@ -42,7 +42,7 @@ const l3Home = lower3rdEl.querySelector(".home-team");
 const l3Away = lower3rdEl.querySelector(".away-team");
 const l3Score = lower3rdEl.querySelector(".score");
 
-/* BUTTONS */
+/* Buttons */
 const scorebugBtn = document.getElementById("scorebug-btn");
 const lower3rdBtn = document.getElementById("lower3rd-btn");
 
@@ -61,45 +61,53 @@ function num(v) {
 }
 
 /* ============================================================
-   RENDER UPCOMING MATCH (before match starts)
+   RENDER: UPCOMING MATCH — names only
    ============================================================ */
 
 function renderUpcoming(match) {
   scorebugEl.classList.add("show");
 
-  // Team names only
+  // TEAM NAMES ONLY
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
 
-  // NO scores
-  homeScoreEl.textContent = "";
-  awayScoreEl.textContent = "";
+  // HIDE SCORE BOXES (both sides)
+  homeScoreEl.parentElement.classList.add("hide");
+  awayScoreEl.parentElement.classList.add("hide");
 
-  // NO sets
-  homePeriodEl.textContent = "";
-  awayPeriodEl.textContent = "";
+  // HIDE PERIOD / SET BOX
   periodBoxEl.classList.add("hide");
 
-  // NO serve
+  // Clear set numbers
+  homePeriodEl.textContent = "";
+  awayPeriodEl.textContent = "";
+
+  // Hide serve indicators
   homeServeEl.classList.add("hide");
   awayServeEl.classList.add("hide");
 
-  // LOWER THIRD:
+  // LOWER THIRD (names only)
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
-    l3Message.textContent = "";       // no "ERÄTAUKO"
+    l3Message.textContent = "";              // no "ERÄTAUKO"
     l3Home.textContent = match.team_A_name;
     l3Away.textContent = match.team_B_name;
-    l3Score.textContent = "";         // no score
+    l3Score.textContent = "";                // no score before match
   }
 }
 
 /* ============================================================
-   RENDER LIVE MATCH
+   RENDER: LIVE MATCH
    ============================================================ */
 
 function renderLive(match) {
   scorebugEl.classList.add("show");
+
+  // Show score boxes again
+  homeScoreEl.parentElement.classList.remove("hide");
+  awayScoreEl.parentElement.classList.remove("hide");
+
+  periodBoxEl.classList.remove("hide");
 
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
@@ -109,15 +117,15 @@ function renderLive(match) {
 
   homePeriodEl.textContent = num(match.sets_A);
   awayPeriodEl.textContent = num(match.sets_B);
-  periodBoxEl.classList.remove("hide");
 
   const serve = match.serve;
   homeServeEl.classList.toggle("hide", serve !== "A");
   awayServeEl.classList.toggle("hide", serve !== "B");
 
+  // Lower third with score
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
-    l3Message.textContent = ""; // keep clean unless timeout logic added later
+    l3Message.textContent = "";
     l3Home.textContent = match.team_A_name;
     l3Away.textContent = match.team_B_name;
     l3Score.textContent = `${match.score_A} - ${match.score_B}`;
@@ -125,7 +133,7 @@ function renderLive(match) {
 }
 
 /* ============================================================
-   RENDER FINISHED MATCH
+   RENDER: FINISHED MATCH — final result
    ============================================================ */
 
 function renderFinished(match) {
@@ -144,6 +152,7 @@ function renderFinished(match) {
   homeServeEl.classList.add("hide");
   awayServeEl.classList.add("hide");
 
+  // Lower third final result
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
     l3Message.textContent = "LOPPUTULOS";
@@ -154,7 +163,7 @@ function renderFinished(match) {
 }
 
 /* ============================================================
-   MAIN LOGIC
+   MAIN LOGIC: choose view
    ============================================================ */
 
 function updateGraphics(match) {
@@ -230,20 +239,22 @@ lower3rdBtn.addEventListener("click", () => {
   lower3rdEl.classList.toggle("in", lower3rdEnabled);
 });
 
-/* Hotkeys – simple A and B keys */
-window.addEventListener("keydown", (e) => {
-  const key = e.key.toLowerCase();
+/* ============================================================
+   HOTKEYS (simple A and B)
+   ============================================================ */
 
-  if (key === "a") {
+window.addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+
+  if (k === "a") {
     e.preventDefault();
     scorebugBtn.click();
   }
 
-  if (key === "b") {
+  if (k === "b") {
     e.preventDefault();
     lower3rdBtn.click();
   }
 });
-
 
 window.addEventListener("load", init);
