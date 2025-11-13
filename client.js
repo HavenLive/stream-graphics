@@ -13,7 +13,7 @@ const TORNEO_API_BASE =
   "match_id=";
 
 const TORNEO_WS_URL = "wss://nchan.torneopal.com/lentopallo/";
-const FALLBACK_MATCH_ID = 685565;
+const FALLBACK_MATCH_ID = 748838;
 
 const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.has("debug");
