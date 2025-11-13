@@ -1,9 +1,9 @@
 /* ============================================================
-   COMPLETE UPDATED client.js
-   Fixes:
-   - Upcoming match view (no scores, no timeout text)
-   - Match finished view (final result)
-   - Logos added automatically
+   CLEAN AND STABLE client.js
+   - No logos
+   - Upcoming match view (names only)
+   - Live view (normal)
+   - Finished match view (final result)
    ============================================================ */
 
 const API_KEY = "anzsj3jqsm";
@@ -19,7 +19,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.has("debug");
 const matchId = urlParams.get("id") || FALLBACK_MATCH_ID;
 
-/* DOM */
+/* DOM ELEMENTS */
 const scorebugEl = document.getElementById("scorebug");
 const lower3rdEl = document.getElementById("lower3rd");
 
@@ -42,17 +42,14 @@ const l3Home = lower3rdEl.querySelector(".home-team");
 const l3Away = lower3rdEl.querySelector(".away-team");
 const l3Score = lower3rdEl.querySelector(".score");
 
-/* Buttons */
+/* BUTTONS */
 const scorebugBtn = document.getElementById("scorebug-btn");
 const lower3rdBtn = document.getElementById("lower3rd-btn");
 
 let lower3rdEnabled = true;
 let latestMatch = null;
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
-
+/* HELPERS */
 function safeUpper(str) {
   if (!str) return "";
   return String(str).toUpperCase();
@@ -63,45 +60,43 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function createLogoElement(teamName) {
-  const img = document.createElement("img");
-  img.classList.add("team-logo");
-  img.style.height = "1.6vw";
-  img.style.marginRight = "0.4vw";
-
-  const safe = teamName.toLowerCase().replace(/\s+/g, "_");
-  img.src = `logos/${safe}.png`;
-
-  img.onerror = () => {
-    img.style.display = "none";
-  };
-
-  return img;
-}
-
 /* ============================================================
-   RENDER FUNCTIONS
+   RENDER UPCOMING MATCH (before match starts)
    ============================================================ */
 
 function renderUpcoming(match) {
   scorebugEl.classList.add("show");
 
-  periodBoxEl.classList.add("hide");
-  homeScoreEl.textContent = "";
-  awayScoreEl.textContent = "";
-  homePeriodEl.textContent = "";
-  awayPeriodEl.textContent = "";
-  homeServeEl.classList.add("hide");
-  awayServeEl.classList.add("hide");
-
-  lower3rdEl.classList.remove("in");
-
+  // Team names only
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
 
-  // Insert logos
-  injectLogos();
+  // NO scores
+  homeScoreEl.textContent = "";
+  awayScoreEl.textContent = "";
+
+  // NO sets
+  homePeriodEl.textContent = "";
+  awayPeriodEl.textContent = "";
+  periodBoxEl.classList.add("hide");
+
+  // NO serve
+  homeServeEl.classList.add("hide");
+  awayServeEl.classList.add("hide");
+
+  // LOWER THIRD:
+  if (lower3rdEnabled) {
+    lower3rdEl.classList.add("in");
+    l3Message.textContent = "";       // no "ERÄTAUKO"
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    l3Score.textContent = "";         // no score
+  }
 }
+
+/* ============================================================
+   RENDER LIVE MATCH
+   ============================================================ */
 
 function renderLive(match) {
   scorebugEl.classList.add("show");
@@ -122,15 +117,16 @@ function renderLive(match) {
 
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
-
+    l3Message.textContent = ""; // keep clean unless timeout logic added later
     l3Home.textContent = match.team_A_name;
     l3Away.textContent = match.team_B_name;
     l3Score.textContent = `${match.score_A} - ${match.score_B}`;
-    l3Message.textContent = "";
   }
-
-  injectLogos();
 }
+
+/* ============================================================
+   RENDER FINISHED MATCH
+   ============================================================ */
 
 function renderFinished(match) {
   scorebugEl.classList.add("show");
@@ -155,28 +151,10 @@ function renderFinished(match) {
     l3Away.textContent = match.team_B_name;
     l3Score.textContent = `${match.score_A} - ${match.score_B}`;
   }
-
-  injectLogos();
-}
-
-/* Insert logos into team boxes and lower third */
-function injectLogos() {
-  // prevent duplicates
-  scorebugEl.querySelectorAll(".team-logo").forEach((e) => e.remove());
-  lower3rdEl.querySelectorAll(".team-logo").forEach((e) => e.remove());
-
-  const logoA = createLogoElement(latestMatch.team_A_name);
-  const logoB = createLogoElement(latestMatch.team_B_name);
-
-  homeNameEl.prepend(logoA.cloneNode(true));
-  awayNameEl.prepend(logoB.cloneNode(true));
-
-  l3Home.prepend(logoA);
-  l3Away.prepend(logoB);
 }
 
 /* ============================================================
-   LOGIC MAIN
+   MAIN LOGIC
    ============================================================ */
 
 function updateGraphics(match) {
@@ -190,17 +168,16 @@ function updateGraphics(match) {
 
   const isFinished =
     match.status === "finished" ||
-    num(match.set_index) > 4 ||
-    (num(match.sets_A) === 3 || num(match.sets_B) === 3);
+    num(match.sets_A) === 3 ||
+    num(match.sets_B) === 3;
 
   if (isUpcoming) return renderUpcoming(match);
   if (isFinished) return renderFinished(match);
-
   return renderLive(match);
 }
 
 /* ============================================================
-   FETCH + WS
+   FETCH + WEBSOCKET
    ============================================================ */
 
 async function fetchOnce() {
@@ -232,6 +209,7 @@ async function init() {
   if (first) updateGraphics(first);
 
   connectWS();
+
   setInterval(async () => {
     const m = await fetchOnce();
     if (m) updateGraphics(m);
@@ -252,7 +230,7 @@ lower3rdBtn.addEventListener("click", () => {
   lower3rdEl.classList.toggle("in", lower3rdEnabled);
 });
 
-/* HOTKEYS */
+/* Hotkeys */
 window.addEventListener("keydown", (e) => {
   if (!e.ctrlKey || !e.shiftKey || !e.altKey) return;
   if (e.key.toLowerCase() === "a") scorebugBtn.click();
