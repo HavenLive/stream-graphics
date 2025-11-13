@@ -238,7 +238,6 @@ function setupButtons() {
 // CTRL + SHIFT + ALT + B => toggle lower 3rd
 function setupKeyboardShortcuts() {
   window.addEventListener("keydown", (event) => {
-    if (!event.ctrlKey || !event.shiftKey || !event.altKey) return;
 
     const key = event.key.toLowerCase();
     if (key === "a" && scorebugBtn) {
