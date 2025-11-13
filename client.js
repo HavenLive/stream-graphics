@@ -351,5 +351,48 @@ if (lower3rdBtn && lower3rdEl) {
   });
 }
 
+// ====== KEYBOARD SHORTCUTS ======
+window.addEventListener("keydown", (e) => {
+  // Älä reagoi, jos kirjoitetaan input/textarea/ contentEditable -kenttään
+  const target = e.target;
+  if (
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.isContentEditable
+  ) {
+    return;
+  }
+
+  const key = e.key.toLowerCase();
+
+  // A = scorebug päälle/pois
+  if (key === "a" && scorebugEl) {
+    const willShow = !scorebugEl.classList.contains("show");
+    scorebugEl.classList.toggle("show", willShow);
+
+    if (scorebugBtn) {
+      scorebugBtn.classList.toggle("on", willShow);
+      scorebugBtn.classList.toggle("off", !willShow);
+    }
+  }
+
+  // B = lower 3rd päälle/pois
+  if (key === "b" && lower3rdEl) {
+    lower3rdEnabled = !lower3rdEnabled;
+
+    if (lower3rdBtn) {
+      lower3rdBtn.classList.toggle("on", lower3rdEnabled);
+      lower3rdBtn.classList.toggle("off", !lower3rdEnabled);
+    }
+
+    if (!lower3rdEnabled) {
+      lower3rdEl.classList.remove("in");
+    } else if (data.match) {
+      setGraphics(data.match);
+    }
+  }
+});
+
+
 // ====== BOOT ======
 addEventListener("load", init);
