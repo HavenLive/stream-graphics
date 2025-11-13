@@ -1,44 +1,50 @@
-/* ============================================================
-   NEW VMIX-OPTIMIZED CSS
-   Clean, strong contrast, broadcast-safe styling
-   ============================================================ */
-
-/* ---------- VARIABLES ---------- */
+/* ===========================================================
+   ROOT VARIABLES
+   =========================================================== */
 :root {
-  --main-grad: linear-gradient(135deg, #ff6b6b, #9b0000);
-  --border-color: rgba(255,255,255,0.4);
-  --shadow: 0 0.6vw 1.2vw rgba(0,0,0,0.85);
+  --bg-gradient: linear-gradient(135deg, #ff6b6b, #8b0000);
+  --border-color: rgba(255, 255, 255, 0.45);
+  --shadow: 0 0.65vw 1.3vw rgba(0, 0, 0, 0.85);
   --text: #ffffff;
   --font: "Segoe UI", Arial, sans-serif;
 }
 
-/* ---------- GLOBAL ---------- */
+/* ===========================================================
+   GLOBAL
+   =========================================================== */
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: #ffffff;
+  background: transparent;
+  color: var(--text);
   font-family: var(--font);
   user-select: none;
 }
 
-/* ============================================================
-   SCOREBUG
-   ============================================================ */
+.overlay {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 
-#scorebug {
+/* ===========================================================
+   SCOREBUG
+   =========================================================== */
+
+.scorebug {
   position: absolute;
-  top: 1.8vw;
-  left: 1.8vw;
+  top: 1.5vw;
+  left: 1.5vw;
+
   display: flex;
   align-items: center;
-  gap: 0.8vw;
-  padding: 0.5vw 0.7vw;
+  gap: 0.7vw;
 
-  background: var(--main-grad);
-  border: 1px solid var(--border-color);
+  padding: 0.6vw 0.8vw;
+  background: var(--bg-gradient);
   border-radius: 0.4vw;
-  color: var(--text);
+  border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
 
   opacity: 0;
@@ -49,140 +55,161 @@ body {
   opacity: 1;
 }
 
-/* Team name column (A/B) */
-.team-box {
+/* --- Team labels --- */
+.teams {
   display: flex;
   flex-direction: column;
+  gap: 0.2vw;
+  padding: 0.4vw 0.8vw;
+
+  background: var(--bg-gradient);
+  border-radius: 0.3vw;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  text-transform: uppercase;
   font-size: 0.95vw;
-  line-height: 1.3vw;
-
-  background: var(--main-grad);
-  border: 1px solid var(--border-color);
-  border-radius: 0.3vw;
-  padding: 0.4vw 0.7vw;
-  box-shadow: var(--shadow);
 }
 
-/* Big points */
-.score-box {
-  font-size: 1.7vw;
-  font-weight: bold;
-  min-width: 2.7vw;
-  height: 2.3vw;
-
+/* --- Game score --- */
+.game-score {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
+  gap: 0.25vw;
 
-  background: var(--main-grad);
-  border: 1px solid var(--border-color);
+  padding: 0.4vw 0.8vw;
+  min-width: 2.6vw;
+
+  background: var(--bg-gradient);
   border-radius: 0.3vw;
+  border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
+  font-size: 1.6vw;
+  font-weight: bold;
 }
 
-/* Sets won */
-.sets-box {
+/* --- Period Score --- */
+.period-score {
+  background: var(--bg-gradient);
+  border-radius: 0.3vw;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+
+  padding: 0.3vw 0.7vw;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25vw;
+
   font-size: 0.9vw;
   font-weight: 600;
-  min-width: 2.2vw;
-  height: 1.5vw;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: var(--main-grad);
-  border: 1px solid var(--border-color);
-  border-radius: 0.3vw;
-  box-shadow: var(--shadow);
 }
 
-/* Serving indicator */
-.serving {
-  width: 0.8vw;
-  height: 0.8vw;
-  border-radius: 50%;
-  background: #ffeb3b;
-  box-shadow: 0 0 0.4vw rgba(0,0,0,0.6);
+.period-score.hide {
+  display: none;
+}
+
+/* --- Serve Indicator --- */
+.serve-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5vw;
+
+  padding: 0.3vw;
+}
+
+.serve-image {
+  width: 1.2vw;
+  height: 1.2vw;
+  filter: drop-shadow(0 0 0.4vw rgba(0,0,0,0.6));
 }
 
 .hide {
   display: none !important;
 }
 
-/* ============================================================
+/* ===========================================================
    LOWER THIRD
-   ============================================================ */
+   =========================================================== */
 
-#lower3rd {
+.lower3rd {
   position: absolute;
   bottom: 3vw;
   left: 50%;
   transform: translateX(-50%);
+
   display: flex;
-  gap: 0.6vw;
   align-items: center;
+  gap: 0.7vw;
 
   opacity: 0;
   transition: opacity 0.35s ease;
 }
 
-#lower3rd.in {
+.lower3rd.in {
   opacity: 1;
 }
 
-/* Generic box for lower third elements */
-.l3-box {
-  padding: 0.7vw 1.4vw;
-  background: var(--main-grad);
-  border: 1px solid var(--border-color);
+/* --- Lower 3rd Boxes --- */
+.text-info,
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+
+  padding: 0.6vw 1.2vw;
+
+  background: var(--bg-gradient);
   border-radius: 0.4vw;
-  color: var(--text);
-  white-space: nowrap;
+  border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
-  font-size: 1.25vw;
-  font-weight: 500;
+
+  color: var(--text);
+  font-size: 1.2vw;
+  white-space: nowrap;
 }
 
-.l3-message {
-  font-size: 1.15vw;
+.message {
   font-weight: 600;
   letter-spacing: 0.05vw;
 }
 
-/* ============================================================
-   CONTROL BUTTONS (Scorebug / Lower3rd)
-   ============================================================ */
+/* ===========================================================
+   CONTROL BUTTONS
+   =========================================================== */
 
-#controls {
+#scorebug-btn,
+#lower3rd-btn {
   position: absolute;
   bottom: 1.5vw;
-  left: 2vw;
-  display: flex;
-  gap: 2vw;
-}
+  left: 1.5vw;
+  margin-right: 1vw;
 
-button {
   padding: 0.6vw 1.2vw;
+  background: #b03030;
+  color: #fff;
   font-size: 1vw;
   border-radius: 0.4vw;
-  background: #b03030;
-  color: white;
+
   border: 1px solid rgba(255,255,255,0.4);
   cursor: pointer;
-
   box-shadow: 0 0.4vw 0.8vw rgba(0,0,0,0.7);
+
   transition: transform 0.15s ease, opacity 0.15s;
 }
 
-button:hover {
+#lower3rd-btn {
+  left: 10vw;
+}
+
+#scorebug-btn:hover,
+#lower3rd-btn:hover {
   transform: scale(1.05);
 }
 
-button.on {
-  opacity: 1;
-}
-
-button.off {
-  opacity: 0.4;
+#scorebug-btn.off,
+#lower3rd-btn.off {
+  opacity: 0.45;
 }
