@@ -230,11 +230,20 @@ lower3rdBtn.addEventListener("click", () => {
   lower3rdEl.classList.toggle("in", lower3rdEnabled);
 });
 
-/* Hotkeys */
+/* Hotkeys – simple A and B keys */
 window.addEventListener("keydown", (e) => {
-  if (!e.ctrlKey || !e.shiftKey || !e.altKey) return;
-  if (e.key.toLowerCase() === "a") scorebugBtn.click();
-  if (e.key.toLowerCase() === "b") lower3rdBtn.click();
+  const key = e.key.toLowerCase();
+
+  if (key === "a") {
+    e.preventDefault();
+    scorebugBtn.click();
+  }
+
+  if (key === "b") {
+    e.preventDefault();
+    lower3rdBtn.click();
+  }
 });
+
 
 window.addEventListener("load", init);
