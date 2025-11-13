@@ -1,9 +1,5 @@
 /* ============================================================
-   Volleyball Graphics Controller
-   - Upcoming: names only (no empty boxes)
-   - Live: full graphics
-   - Finished: final result on lower third
-   - Hotkeys: A = scorebug, B = lower third
+   Volleyball Graphics Controller — FIXED FULL VERSION
    ============================================================ */
 
 const API_KEY = "anzsj3jqsm";
@@ -16,7 +12,6 @@ const TORNEO_WS_URL = "wss://nchan.torneopal.com/lentopallo/";
 const FALLBACK_MATCH_ID = 685565;
 
 const urlParams = new URLSearchParams(window.location.search);
-const debug = urlParams.has("debug");
 const matchId = urlParams.get("id") || FALLBACK_MATCH_ID;
 
 /* ============================
@@ -39,13 +34,13 @@ const periodBoxEl = document.getElementById("period-score");
 const homeServeEl = document.getElementById("home-serving");
 const awayServeEl = document.getElementById("away-serving");
 
-// Lower third internals
+// Lower third
 const l3Message = lower3rdEl.querySelector(".message");
 const l3Home = lower3rdEl.querySelector(".home-team");
 const l3Away = lower3rdEl.querySelector(".away-team");
 const l3Score = lower3rdEl.querySelector(".score");
-const l3TextBox = lower3rdEl.querySelector(".text-info"); // ylälaatikko
-const l3ScoreBox = l3Score;                               // pistelaatikko
+const l3TextBox = lower3rdEl.querySelector(".text-info");
+const l3ScoreBox = l3Score;
 
 // Buttons
 const scorebugBtn = document.getElementById("scorebug-btn");
@@ -57,216 +52,169 @@ let latestMatch = null;
 /* ============================
    HELPERS
    ============================ */
-function safeUpper(str) {
-  if (!str) return "";
-  return String(str).toUpperCase();
+function safeUpper(s) {
+  return s ? String(s).toUpperCase() : "";
 }
-
 function num(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
-
-/* Small helpers for show/hide via inline styles */
 function hideElement(el) {
-  if (!el) return;
-  el.style.display = "none";
+  if (el) el.style.display = "none";
 }
 function showElement(el, display = "") {
-  if (!el) return;
-  el.style.display = display; // "" = default (CSS määrää)
+  if (el) el.style.display = display;
 }
 
 /* ============================
-   RENDER: UPCOMING MATCH
+   RENDER UPCOMING
    ============================ */
-/*
-  Ennen peliä:
-  - Scorebug: vain joukkueiden nimet, EI pistebokseja, EI eräbokseja, EI syöttöä
-  - Lower third: vain joukkueiden nimet, EI pistelaatikkoa, EI ylätekstilaatikkoa
-*/
 function renderUpcoming(match) {
   if (!match) return;
 
-  // Scorebug näkyville
   scorebugEl.classList.add("show");
 
-  // Joukkueiden nimet
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
 
-  // Piilota pisteboksi ja eräboksi kokonaan
-  // .game-score (pisteboksi) on parent, johon home/away score kuuluvat
-  const gameScoreBox = homeScoreEl ? homeScoreEl.parentElement : null;
+  const gameScoreBox = homeScoreEl.parentElement;
   hideElement(gameScoreBox);
   hideElement(periodBoxEl);
 
-  // Tyhjennä piste- ja eräpiste arvot (varmuuden vuoksi)
-  if (homeScoreEl) homeScoreEl.textContent = "";
-  if (awayScoreEl) awayScoreEl.textContent = "";
-  if (homePeriodEl) homePeriodEl.textContent = "";
-  if (awayPeriodEl) awayPeriodEl.textContent = "";
+  homeScoreEl.textContent = "";
+  awayScoreEl.textContent = "";
+  homePeriodEl.textContent = "";
+  awayPeriodEl.textContent = "";
 
-  // Piilota syöttöikonit
-  if (homeServeEl) homeServeEl.classList.add("hide");
-  if (awayServeEl) awayServeEl.classList.add("hide");
+  homeServeEl.classList.add("hide");
+  awayServeEl.classList.add("hide");
 
-  // LOWER THIRD: vain joukkueiden nimet, ei laatikoita turhaan
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
 
-    // piilota tekstiboksi (ylälaatikko) ja pisteboksi
     hideElement(l3TextBox);
     hideElement(l3ScoreBox);
 
-    if (l3Message) l3Message.textContent = "";
-    if (l3Home) l3Home.textContent = match.team_A_name;
-    if (l3Away) l3Away.textContent = match.team_B_name;
-    if (l3Score) l3Score.textContent = "";
+    l3Message.textContent = "";
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    l3Score.textContent = "";
   } else {
     lower3rdEl.classList.remove("in");
   }
 }
 
 /* ============================
-   RENDER: LIVE MATCH
+   RENDER LIVE
    ============================ */
-/*
-  Pelin aikana:
-  - Scorebug: kaikki näkyvillä (pisteet, erät, syöttö)
-  - Lower third: joukkueet + pistelaatikko, ei ylätekstiboksia ellei erikseen käytetä
-*/
 function renderLive(match) {
   if (!match) return;
 
   scorebugEl.classList.add("show");
 
-  // Näytä piste- ja eräboksit
-  const gameScoreBox = homeScoreEl ? homeScoreEl.parentElement : null;
+  const gameScoreBox = homeScoreEl.parentElement;
   showElement(gameScoreBox);
   showElement(periodBoxEl);
 
-  // Joukkueiden nimet
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
 
-  // Pisteet
   homeScoreEl.textContent = num(match.score_A);
   awayScoreEl.textContent = num(match.score_B);
 
-  // Erät
   homePeriodEl.textContent = num(match.sets_A);
   awayPeriodEl.textContent = num(match.sets_B);
 
-  // Syöttö
   const serve = match.serve;
-  if (homeServeEl) homeServeEl.classList.toggle("hide", serve !== "A");
-  if (awayServeEl) awayServeEl.classList.toggle("hide", serve !== "B");
+  homeServeEl.classList.toggle("hide", serve !== "A");
+  awayServeEl.classList.toggle("hide", serve !== "B");
 
-  // LOWER THIRD: pisteboksi käytössä, ylätekstilaatikko piilotettu ellei tarvetta
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
 
-    hideElement(l3TextBox);           // ei ERÄTAUKO-boksia automaattisesti
-    showElement(l3ScoreBox);          // pisteboksi näkyviin
+    hideElement(l3TextBox);
+    showElement(l3ScoreBox);
 
-    if (l3Message) l3Message.textContent = "";
-    if (l3Home) l3Home.textContent = match.team_A_name;
-    if (l3Away) l3Away.textContent = match.team_B_name;
-    if (l3Score) l3Score.textContent = `${match.score_A} - ${match.score_B}`;
+    l3Message.textContent = "";
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    l3Score.textContent = `${match.score_A} - ${match.score_B}`;
   } else {
     lower3rdEl.classList.remove("in");
   }
 }
 
 /* ============================
-   RENDER: FINISHED MATCH
+   RENDER FINISHED
    ============================ */
-/*
-  Pelin jälkeen:
-  - Scorebug: lopulliset pisteet ja erät näkyvät
-  - Lower third: "LOPPUTULOS" ylälaatikossa + lopputulos pistelaatikossa
-*/
 function renderFinished(match) {
   if (!match) return;
 
   scorebugEl.classList.add("show");
 
-  // Näytä piste- ja eräboksit
-  const gameScoreBox = homeScoreEl ? homeScoreEl.parentElement : null;
+  const gameScoreBox = homeScoreEl.parentElement;
   showElement(gameScoreBox);
   showElement(periodBoxEl);
 
-  // Joukkueiden nimet
   homeNameEl.textContent = safeUpper(match.team_A_name);
   awayNameEl.textContent = safeUpper(match.team_B_name);
 
-  // Pisteet
   homeScoreEl.textContent = num(match.score_A);
   awayScoreEl.textContent = num(match.score_B);
 
-  // Erät
   homePeriodEl.textContent = num(match.sets_A);
   awayPeriodEl.textContent = num(match.sets_B);
 
-  // Syöttö pois
-  if (homeServeEl) homeServeEl.classList.add("hide");
-  if (awayServeEl) awayServeEl.classList.add("hide");
+  homeServeEl.classList.add("hide");
+  awayServeEl.classList.add("hide");
 
-  // LOWER THIRD: LOPPUTULOS
   if (lower3rdEnabled) {
     lower3rdEl.classList.add("in");
 
-    showElement(l3TextBox);           // näytetään ylälaatikko
-    showElement(l3ScoreBox);          // pisteboksi näkyviin
+    showElement(l3TextBox);
+    showElement(l3ScoreBox);
 
-    if (l3Message) l3Message.textContent = "LOPPUTULOS";
-    if (l3Home) l3Home.textContent = match.team_A_name;
-    if (l3Away) l3Away.textContent = match.team_B_name;
-    if (l3Score) l3Score.textContent = `${match.score_A} - ${match.score_B}`;
+    l3Message.textContent = "LOPPUTULOS";
+    l3Home.textContent = match.team_A_name;
+    l3Away.textContent = match.team_B_name;
+    l3Score.textContent = `${match.score_A} - ${match.score_B}`;
   } else {
     lower3rdEl.classList.remove("in");
   }
 }
 
 /* ============================
-   MAIN LOGIC: choose view
+   MAIN UPDATE SELECTOR
    ============================ */
-
 function updateGraphics(match) {
   latestMatch = match;
 
-  const isUpcoming =
+  const upcoming =
     match.status === "upcoming" ||
     (num(match.score_A) === 0 &&
       num(match.score_B) === 0 &&
       num(match.set_index) === 0);
 
-  const isFinished =
+  const finished =
     match.status === "finished" ||
     num(match.sets_A) === 3 ||
     num(match.sets_B) === 3;
 
-  if (isUpcoming) {
-    renderUpcoming(match);
-  } else if (isFinished) {
-    renderFinished(match);
-  } else {
-    renderLive(match);
-  }
+  if (upcoming) return renderUpcoming(match);
+  if (finished) return renderFinished(match);
+  return renderLive(match);
 }
 
 /* ============================
-   DATA: FETCH + WEBSOCKET
+   FETCH + WS
    ============================ */
-
 async function fetchOnce() {
   try {
     const res = await fetch(TORNEO_API_BASE + matchId);
     const json = await res.json();
     return json.match || json;
   } catch (e) {
-    console.error("fetchOnce error", e);
+    console.error("fetch error", e);
     return null;
   }
 }
@@ -279,12 +227,12 @@ function connectWS() {
       const data = JSON.parse(e.data);
       if (data.match) updateGraphics(data.match);
     } catch (err) {
-      console.error("WS message parse error", err);
+      console.error("WS parse error", err);
     }
   };
 
   ws.onclose = () => {
-    setTimeout(connectWS, 2000);
+    setTimeout(connectWS, 1500);
   };
 }
 
@@ -294,7 +242,6 @@ async function init() {
 
   connectWS();
 
-  // backup-pollaus 10s välein
   setInterval(async () => {
     const m = await fetchOnce();
     if (m) updateGraphics(m);
@@ -304,12 +251,11 @@ async function init() {
 /* ============================
    BUTTONS
    ============================ */
-
 scorebugBtn.addEventListener("click", () => {
-  const show = !scorebugEl.classList.contains("show");
-  scorebugEl.classList.toggle("show", show);
-  scorebugBtn.classList.toggle("on", show);
-  scorebugBtn.classList.toggle("off", !show);
+  const visible = !scorebugEl.classList.contains("show");
+  scorebugEl.classList.toggle("show", visible);
+  scorebugBtn.classList.toggle("on", visible);
+  scorebugBtn.classList.toggle("off", !visible);
 });
 
 lower3rdBtn.addEventListener("click", () => {
@@ -317,27 +263,20 @@ lower3rdBtn.addEventListener("click", () => {
   lower3rdEl.classList.toggle("in", lower3rdEnabled);
   lower3rdBtn.classList.toggle("on", lower3rdEnabled);
   lower3rdBtn.classList.toggle("off", !lower3rdEnabled);
+
+  if (latestMatch) updateGraphics(latestMatch);
 });
 
 /* ============================
-   HOTKEYS: A = scorebug, B = lower third
+   HOTKEYS (A = scorebug, B = lower third)
    ============================ */
-
 window.addEventListener("keydown", (e) => {
-  const key = e.key.toLowerCase();
-
-  if (key === "a") {
-    e.preventDefault();
-    scorebugBtn.click();
-  }
-
-  if (key === "b") {
-    e.preventDefault();
-    lower3rdBtn.click();
-  }
+  const k = e.key.toLowerCase();
+  if (k === "a") scorebugBtn.click();
+  if (k === "b") lower3rdBtn.click();
 });
 
 /* ============================
-   BOOTSTRAP
+   INIT
    ============================ */
 window.addEventListener("load", init);
