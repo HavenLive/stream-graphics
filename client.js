@@ -1,3 +1,7 @@
+// Volleyball graphics controller with keyboard shortcuts
+// Scorebug toggle: CTRL + SHIFT + ALT + A
+// Lower 3rd toggle: CTRL + SHIFT + ALT + B
+
 // ====== CONFIG ======
 const API_KEY = "anzsj3jqsm";
 const TORNEO_API_BASE =
@@ -6,7 +10,7 @@ const TORNEO_API_BASE =
   "match_id=";
 
 const TORNEO_WS_URL = "wss://nchan.torneopal.com/lentopallo/";
-const DEBUG_WS_URL = "http://localhost:3000";
+const DEBUG_WS_URL = "ws://localhost:3000";
 const FALLBACK_MATCH_ID = 685565;
 
 // ====== URL PARAMS / ENV ======
@@ -14,142 +18,120 @@ const urlParams = new URLSearchParams(window.location.search);
 const debug = urlParams.has("debug");
 const matchId = urlParams.get("id") || FALLBACK_MATCH_ID;
 
-// ====== DOM: SCOREBUG ======
+// ====== DOM ELEMENTS ======
 const scorebugEl = document.getElementById("scorebug");
 
 const home = {
   name: document.getElementById("home-team"),
   score: document.getElementById("home-score"),
-  periodScore: document.getElementById("home-period-score"),
-  serving: document.getElementById("home-serving"),
+  sets: document.getElementById("home-period-score"),
+  serve: document.getElementById("home-serving"),
 };
 
 const away = {
   name: document.getElementById("away-team"),
   score: document.getElementById("away-score"),
-  periodScore: document.getElementById("away-period-score"),
-  serving: document.getElementById("away-serving"),
+  sets: document.getElementById("away-period-score"),
+  serve: document.getElementById("away-serving"),
 };
 
-// ====== DOM: LOWER THIRD ======
 const lower3rdEl = document.getElementById("lower3rd");
-const lower3rdMessage = lower3rdEl
+const lower3rdMessageEl = lower3rdEl
   ? lower3rdEl.querySelector(".message")
   : null;
-const lower3rdHome = lower3rdEl
+const lower3rdHomeEl = lower3rdEl
   ? lower3rdEl.querySelector(".home-team")
   : null;
-const lower3rdAway = lower3rdEl
+const lower3rdAwayEl = lower3rdEl
   ? lower3rdEl.querySelector(".away-team")
   : null;
-const lower3rdScore = lower3rdEl ? lower3rdEl.querySelector(".score") : null;
+const lower3rdScoreEl = lower3rdEl
+  ? lower3rdEl.querySelector(".score")
+  : null;
 
-let lower3rdEnabled = !!lower3rdEl;
+const scorebugBtn = document.getElementById("scorebug-btn");
+const lower3rdBtn = document.getElementById("lower3rd-btn");
 
-let prevTimeoutsA = 0;
-let prevTimeoutsB = 0;
-let timeoutBannerActive = false;
-let timeoutBannerTeam = null;
-let timeoutBannerExpiry = 0;
-const TIMEOUT_BANNER_DURATION = 30000; // 30 sek
+// ====== STATE ======
+let latestMatch = null;
+let scorebugVisible = true;
+let lower3rdVisible = true;
+let ws = null;
+let reconnectTimeout = null;
 
 // ====== HELPERS ======
-function num(value) {
-  const n = Number(value);
+function toNumber(v) {
+  const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
 
-function safeUpper(str) {
+function upper(str) {
   if (!str) return "";
   return String(str).toUpperCase();
 }
 
-function updateServeIndicator(teamAHasServe) {
-  if (!home.serving || !away.serving) return;
+function setServeIndicator(serveSide) {
+  if (!home.serve || !away.serve) return;
 
-  if (teamAHasServe === null || teamAHasServe === undefined) {
-    home.serving.classList.add("hide");
-    away.serving.classList.add("hide");
-    return;
-  }
+  // piilota molemmat oletuksena
+  home.serve.classList.add("hide");
+  away.serve.classList.add("hide");
 
-  if (teamAHasServe) {
-    home.serving.classList.remove("hide");
-    away.serving.classList.add("hide");
-  } else {
-    home.serving.classList.add("hide");
-    away.serving.classList.remove("hide");
+  if (serveSide === "A") {
+    home.serve.classList.remove("hide");
+  } else if (serveSide === "B") {
+    away.serve.classList.remove("hide");
   }
 }
 
-function getCurrentSet(match) {
-  return num(match.set_index);
-}
+// ====== RENDERING ======
+function renderMatch(match) {
+  if (!match) return;
 
-function getSetsWon(match) {
-  return {
-    A: num(match.sets_A),
-    B: num(match.sets_B),
-  };
-}
+  latestMatch = match;
 
-function getSetScores(match) {
-  return {
-    A: num(match.score_A),
-    B: num(match.score_B),
-  };
-}
+  // Joukkueiden nimet
+  if (home.name) home.name.textContent = upper(match.team_A_name);
+  if (away.name) away.name.textContent = upper(match.team_B_name);
 
-function getServeSide(match) {
-  const serve = match.serve; // "A", "B" tai null
-  if (serve === "A") return "A";
-  if (serve === "B") return "B";
-  return null;
-}
+  // Erän pisteet
+  if (home.score) home.score.textContent = toNumber(match.score_A);
+  if (away.score) away.score.textContent = toNumber(match.score_B);
 
-function isTimeoutOngoing(match) {
-  // Torneopal: aikalisä käynnissä, jos jokin näistä flaggeista tms.
-  // Tässä esimerkissä katsotaan vain live_timeouts_* countereita bannerin triggaamiseen,
-  // ja käytetään erillistä timeoutBannerActive -flägiä näyttöön.
-  return timeoutBannerActive && Date.now() < timeoutBannerExpiry;
-}
+  // Voitetut erät
+  if (home.sets) home.sets.textContent = toNumber(match.sets_A);
+  if (away.sets) away.sets.textContent = toNumber(match.sets_B);
 
-function formatTimeoutMessage(match) {
-  if (!timeoutBannerActive || !timeoutBannerTeam) return "ERÄTAUKO";
+  // Syöttäjä ("A" / "B" / null)
+  setServeIndicator(match.serve);
 
-  const teamName =
-    timeoutBannerTeam === "A" ? match.team_A_name : match.team_B_name;
+  // Lower 3rd
+  if (lower3rdEl) {
+    if (lower3rdHomeEl) lower3rdHomeEl.textContent = match.team_A_name || "";
+    if (lower3rdAwayEl) lower3rdAwayEl.textContent = match.team_B_name || "";
 
-  if (!teamName) return "AIKALISÄ";
+    if (lower3rdScoreEl) {
+      const scoreText = `${toNumber(match.score_A)} - ${toNumber(
+        match.score_B
+      )}`;
+      lower3rdScoreEl.textContent = scoreText;
+    }
 
-  return `AIKALISÄ – ${safeUpper(teamName)}`;
-}
+    if (lower3rdMessageEl && !lower3rdMessageEl.textContent.trim()) {
+      // oletusviesti jos tyhjä
+      lower3rdMessageEl.textContent = "ERÄTAUKO";
+    }
 
-function updateLowerThirdTimeout(match) {
-  if (!lower3rdEl || !lower3rdMessage) return;
-
-  if (!isTimeoutOngoing(match)) {
-    timeoutBannerActive = false;
-    timeoutBannerTeam = null;
-    timeoutBannerExpiry = 0;
-    return;
+    if (lower3rdVisible) {
+      lower3rdEl.classList.add("in");
+    } else {
+      lower3rdEl.classList.remove("in");
+    }
   }
-
-  const message = formatTimeoutMessage(match);
-  lower3rdMessage.textContent = message;
-
-  // Aikalisätilassa käytetään tiiviimpää layoutia (CSS-luokka)
-  lower3rdEl.classList.add("timeout-mode");
 }
 
-function clearLowerThirdTimeoutMode() {
-  if (!lower3rdEl || !lower3rdMessage) return;
-  lower3rdEl.classList.remove("timeout-mode");
-  lower3rdMessage.textContent = "ERÄTAUKO";
-}
-
-// ====== FETCH & WS ======
-async function fetchMatchData(id) {
+// ====== DATA FETCHING ======
+async function fetchMatchOnce(id) {
   const url = TORNEO_API_BASE + encodeURIComponent(id);
 
   try {
@@ -159,27 +141,25 @@ async function fetchMatchData(id) {
       return null;
     }
     const json = await res.json();
-    return json;
+    // API voi palauttaa joko pelkän matsin tai { match: {...} }
+    return json.match || json;
   } catch (err) {
-    console.error("fetchMatchData error", err);
+    console.error("fetchMatchOnce failed", err);
     return null;
   }
 }
 
-let ws = null;
-let reconnectTimeout = null;
-let reconnectAttempts = 5;
-let data = { match: null };
-
-function connectWebsocket() {
-  if (!matchId || debug) {
+// ====== WEBSOCKET ======
+function connectWebSocket() {
+  if (!("WebSocket" in window)) {
+    console.warn("WebSocket ei tuettu – käytetään vain pollingia");
     return;
   }
 
-  const wsUrl = `${TORNEO_WS_URL}${matchId}`;
+  const url = debug ? DEBUG_WS_URL : `${TORNEO_WS_URL}${matchId}`;
 
   try {
-    ws = new WebSocket(wsUrl);
+    ws = new WebSocket(url);
   } catch (err) {
     console.error("WebSocket init error", err);
     scheduleReconnect();
@@ -187,65 +167,111 @@ function connectWebsocket() {
   }
 
   ws.addEventListener("open", () => {
-    console.log("WS connected");
-    reconnectAttempts = 5;
+    console.log("WebSocket connected");
   });
 
   ws.addEventListener("message", (event) => {
     try {
-      const msg = JSON.parse(event.data);
-      if (msg.match) {
-        data.match = msg.match;
-        setGraphics(msg.match);
-      }
+      const payload = JSON.parse(event.data);
+      const match = payload.match || payload;
+      renderMatch(match);
     } catch (err) {
-      console.error("WS message parse failed", err);
+      console.error("WebSocket message parse failed", err);
     }
   });
 
   ws.addEventListener("close", () => {
-    console.warn("WS closed");
+    console.warn("WebSocket closed");
     scheduleReconnect();
   });
 
   ws.addEventListener("error", (err) => {
-    console.error("WS error", err);
-    if (ws) {
+    console.error("WebSocket error", err);
+    try {
       ws.close();
-    }
+    } catch (_) {}
   });
 }
 
 function scheduleReconnect() {
-  if (reconnectAttempts <= 0) {
-    console.warn("WS: no reconnect attempts left");
-    return;
-  }
-
   if (reconnectTimeout) {
     clearTimeout(reconnectTimeout);
   }
-
   reconnectTimeout = setTimeout(() => {
-    console.warn(
-      `WS: Connection lost. Reconnecting in 5s... (${reconnectAttempts} left)`
-    );
-    reconnectAttempts--;
-    connectWebsocket();
+    connectWebSocket();
   }, 5000);
 }
 
-// ====== RENDER ======
-function setGraphics(match) {
-  if (!match) return;
+// ====== BUTTON LOGIC ======
+function setupButtons() {
+  if (scorebugBtn && scorebugEl) {
+    scorebugBtn.classList.add("on");
+    scorebugEl.classList.add("show"); // näkyviin alussa
 
-  // --- aikalisä tunnistus (counter kasvaa) ---
-  const currentTimeoutsA = num(match.live_timeouts_A);
-  const currentTimeoutsB = num(match.live_timeouts_B);
+    scorebugBtn.addEventListener("click", () => {
+      scorebugVisible = !scorebugVisible;
+      scorebugEl.classList.toggle("show", scorebugVisible);
+      scorebugBtn.classList.toggle("on", scorebugVisible);
+      scorebugBtn.classList.toggle("off", !scorebugVisible);
+    });
+  }
 
-  if (currentTimeoutsA > prevTimeoutsA) {
-    timeoutBannerActive = true;
-    timeoutBannerTeam = "A";
-    timeoutBannerExpiry = Date.now() + TIMEOUT_BANNER_DURATION;
-  } else if (currentTimeoutsB > prevTimeoutsB) {
-    time
+  if (lower3rdBtn && lower3rdEl) {
+    lower3rdBtn.classList.add("on");
+
+    lower3rdBtn.addEventListener("click", () => {
+      lower3rdVisible = !lower3rdVisible;
+      lower3rdBtn.classList.toggle("on", lower3rdVisible);
+      lower3rdBtn.classList.toggle("off", !lower3rdVisible);
+
+      if (lower3rdVisible) {
+        lower3rdEl.classList.add("in");
+      } else {
+        lower3rdEl.classList.remove("in");
+      }
+    });
+  }
+}
+
+// ====== KEYBOARD SHORTCUTS ======
+// CTRL + SHIFT + ALT + A => toggle scorebug
+// CTRL + SHIFT + ALT + B => toggle lower 3rd
+function setupKeyboardShortcuts() {
+  window.addEventListener("keydown", (event) => {
+    if (!event.ctrlKey || !event.shiftKey || !event.altKey) return;
+
+    const key = event.key.toLowerCase();
+    if (key === "a" && scorebugBtn) {
+      event.preventDefault();
+      scorebugBtn.click();
+    } else if (key === "b" && lower3rdBtn) {
+      event.preventDefault();
+      lower3rdBtn.click();
+    }
+  });
+}
+
+// ====== INIT ======
+async function init() {
+  setupButtons();
+  setupKeyboardShortcuts();
+
+  // Ensimmäinen haku
+  const firstMatch = await fetchMatchOnce(matchId);
+  if (firstMatch) {
+    renderMatch(firstMatch);
+  }
+
+  // WebSocket livepäivityksille
+  connectWebSocket();
+
+  // Varmuuden vuoksi pollaus 10s välein
+  setInterval(async () => {
+    const match = await fetchMatchOnce(matchId);
+    if (match) {
+      renderMatch(match);
+    }
+  }, 10000);
+}
+
+window.addEventListener("load", init);
